@@ -81,4 +81,5 @@ print(predict_with_amount("Compra no supermercado R$ 150,00"))
 print(predict_with_amount("Jantar fora com amigos R$ 250,00"))
 print(predict_with_amount("Compra de roupas na Zara R$ 350,00"))
 print(predict_with_amount("Passeio no parque R$ 50,00"))
+print(predict_with_amount("fui na cafeteria 50"))
 
