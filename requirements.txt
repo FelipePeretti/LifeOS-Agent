@@ -1,0 +1,7 @@
+google-adk
+python-dotenv
+joblib
+scikit-learn
+pandas
+nltk
+numpy
