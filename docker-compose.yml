@@ -1,0 +1,84 @@
+version: '3.9'
+
+services:
+  # PostgreSQL - Banco de dados para Evolution API
+  postgres:
+    container_name: evolution_postgres
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: evolution
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: evolution_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - evolution_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evolution -d evolution"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis - Cache para Evolution API
+  redis:
+    container_name: evolution_redis
+    image: redis:alpine
+    restart: always
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - evolution_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Evolution API v2
+  evolution-api:
+    container_name: evolution_api
+    image: atendai/evolution-api:v2.1.1
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.evolution
+    volumes:
+      - evolution_instances:/evolution/instances
+    networks:
+      - evolution_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  
+  mcp-whatsapp:
+    build:
+      context: ./mcp-evolution-api
+      dockerfile: Dockerfile
+    environment:
+      - EVOLUTION_API_URL=http://evolution-api:8080
+      - EVOLUTION_API_KEY=B6D711FCDE4D4FD5936544120E713976
+      - EVOLUTION_API_INSTANCE=LifeOs
+      - ENABLE_WEBSOCKET=false
+      - PORT=3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - evolution-api
+
+volumes:
+  postgres_data:
+  redis_data:
+  evolution_instances:
+
+networks:
+  evolution_network:
+    driver: bridge

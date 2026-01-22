@@ -1,0 +1,49 @@
+{
+  "name": "mcp-evolution-api",
+  "version": "1.0.0",
+  "description": "MCP Server para Evolution API v2 - conecta modelos de linguagem ao WhatsApp",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "mcp-evolution-api": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node --esm src/index.ts",
+    "docker:build": "docker build -t mcp-evolution-api .",
+    "docker:run": "docker run -p 3000:3000 --env-file .env mcp-evolution-api",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "mcp",
+    "evolution-api",
+    "whatsapp",
+    "ai",
+    "llm",
+    "claude",
+    "gpt"
+  ],
+  "author": "IntuitivePhella",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/IntuitivePhella/mcp-evolution-api"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.3",
+    "axios": "^1.8.4",
+    "dotenv": "^16.4.5",
+    "ws": "^8.16.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.17",
+    "@types/ws": "^8.5.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
