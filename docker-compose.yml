@@ -7,9 +7,9 @@ services:
     image: postgres:15
     restart: always
     environment:
-      POSTGRES_DB: evolution
-      POSTGRES_USER: evolution
-      POSTGRES_PASSWORD: evolution_password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -17,7 +17,7 @@ services:
     networks:
       - evolution_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U evolution -d evolution"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -58,19 +58,20 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-  
-  mcp-whatsapp:
+
+  # LifeOS Agent - Agente principal com SQLite
+  lifeos-agent:
+    container_name: lifeos_agent
     build:
-      context: ./mcp-evolution-api
-      dockerfile: Dockerfile
-    environment:
-      - EVOLUTION_API_URL=http://evolution-api:8080
-      - EVOLUTION_API_KEY=B6D711FCDE4D4FD5936544120E713976
-      - EVOLUTION_API_INSTANCE=LifeOs
-      - ENABLE_WEBSOCKET=false
-      - PORT=3000
-    ports:
-      - "3000:3000"
+      context: .
+      dockerfile: Dockerfile.agent
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - lifeos_data:/data
+    networks:
+      - evolution_network
     depends_on:
       - evolution-api
 
@@ -78,6 +79,7 @@ volumes:
   postgres_data:
   redis_data:
   evolution_instances:
+  lifeos_data:
 
 networks:
   evolution_network:

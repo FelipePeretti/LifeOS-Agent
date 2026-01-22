@@ -1,0 +1,29 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Instalar dependências do sistema
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sqlite3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiar requirements e instalar dependências Python
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar código fonte
+COPY life_os_agent/ ./life_os_agent/
+COPY database/ ./database/
+
+# Criar diretório para o banco de dados
+RUN mkdir -p /data
+
+# Script de inicialização
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+ENV PYTHONPATH=/app
+ENV DB_PATH=/data/lifeos.db
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["python", "-m", "life_os_agent.agent"]
