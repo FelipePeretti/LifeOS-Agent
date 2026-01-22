@@ -12,6 +12,11 @@ __pycache__/
 node_modules/
 dist/
 
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
 # IDE
 .vscode/
 *.code-workspace
