@@ -5,99 +5,81 @@ from google.adk.tools import agent_tool
 
 from .finance import build_finance_agent
 from .comms import build_comms_agent
+from .database import build_database_agent
 
-from life_os_agent.tools.finance.transaction_pipeline import is_finance_related, apply_confirmation
-from life_os_agent.tools.finance.pending_store import (
-    has_pending_transaction, set_pending_transaction, get_pending_transaction, clear_pending_transaction
-)
-from life_os_agent.tools.finance.mock_storage import print_transaction_payload  
-
-from life_os_agent.tools.db.sqlite_tools import init_db, upsert_user, save_transaction, get_transactions
+from life_os_agent.tools.finance.finance_unified import process_finance_input
+from life_os_agent.tools.finance.transaction_pipeline import is_finance_related
 
 ORCHESTRATOR_INSTRUCTION = """
-Você é o Orchestrator do LifeOS.
+Você é o Orquestrador do LifeOS.
+Seu objetivo é gerenciar a vida financeira e pessoal do usuário, coordenando agentes especializados.
 
-REGRAS:
-- NÃO deixe o FinanceAgent falar direto com o usuário.
-- Sempre que você tiver um JSON (resultado do FinanceAgent ou apply_confirmation),
-  chame a tool CommsAgent passando ESSE JSON como entrada, e retorne APENAS o texto do CommsAgent.
+SEU FLUXO DE TRABALHO:
+1. Analise a entrada do usuário.
 
-FLUXO:
-0) Se houver pendência:
-- has_pending_transaction()
-- se true: pending = get_pending_transaction()
-- result_json = apply_confirmation(user_text, pending)
-- se result_json.status == ok: print_transaction_payload(...) e clear_pending_transaction()
-- se cancelled: clear_pending_transaction()
-- chame CommsAgent(result_json) e retorne a mensagem.
+2. Se for CHIT-CHAT (conversas, saudação):
+   - Responda você mesmo.
 
-1) Se não houver pendência:
-- is_finance_related(user_text)
-- se false: responda você mesmo brevemente (sem chamar CommsAgent).
+3. Se for FINANCEIRO:
+   - Chame `process_finance_input(text)`.
+   - Analise o retorno:
+     - Se `action == "save_transaction"`: CHAME O `DatabaseAgent`. 
+       - PRIMEIRO garanta que o usuário existe (`get_or_create_user` se necessário).
+       - DEPOIS use `add_transaction` com o ID correto.
+     - Se `status == "ignored"`: Trate como chit-chat normal.
+     - Se `status == "need_confirmation"`: Passe o JSON para o `CommsAgent`.
 
-2) Se for finanças:
-- result_json = FinanceAgent(user_text)   (chamado como tool)
-- se status == need_confirmation: set_pending_transaction(result_json.transaction_payload)
-- se status == ok: print_transaction_payload(result_json.transaction_payload)
-- chame CommsAgent(result_json) e retorne a mensagem.
+4. Se for CORREÇÃO ou CANCELAMENTO ("Mude o valor para 20", "Delete a última"):
+   - Primeiro: CHAME `get_transactions(limit=5)` para achar o ID da última transação.
+   - Analise qual é a transação correta.
+   - CHAME `update_transaction(id, ...)` ou `delete_transaction(id)`.
+   - Confirme a ação com o usuário.
 
-PERSISTÊNCIA (SQLite):
-- Sempre normalize o retorno do FinanceAgent assim:
-  resp = result_json.get("make_transaction_payload_response", result_json)
+5. Se for PEDIDO DE DADOS (extrato, saldo, metas, ultimas compras):
+   - CHAME O `DatabaseAgent` (use `get_transactions`, `get_balance`, etc).
+   - Passe o JSON retornado para o `CommsAgent` formatar.
 
-- Se resp.status == "ok":
-  - Você DEVE gravar no banco chamando save_transaction(resp.transaction_payload, user_id=<id_do_usuario>).
-  - Depois chame CommsAgent passando o JSON (pode incluir o inserted_id se quiser).
+6. FINALIZAÇÃO:
+   - Sempre que fizer uma operação de banco, passe o resultado final para o `CommsAgent` dar o feedback ao usuário.
 
-- Se resp.status == "need_confirmation":
-  - NÃO grave no banco.
-  - Chame set_pending_transaction(resp.transaction_payload).
-  - Depois chame CommsAgent para pedir confirmação.
+FERRAMENTAS:
+- `process_finance_input`: Analisa intenção e estrutura dados, mas NÃO salva.
+- `DatabaseAgent`: O ÚNICO que pode ler/escrever no banco (inclusive updates/deletes).
+- `CommsAgent`: O ÚNICO que fala bonitinho com o usuário.
+"""
 
-PENDING -> CONFIRMAÇÃO:
-- Quando houver transação pendente:
-  - result2 = apply_confirmation(user_text, pending_payload)
-  - Se result2.status == "ok":
-      - chame save_transaction(result2.transaction_payload, user_id=<id_do_usuario>)
-      - clear_pending_transaction()
-    Se result2.status == "cancelled":
-      - clear_pending_transaction()
-  - Depois chame CommsAgent(result2) e retorne a mensagem.
-
-HISTÓRICO:
-- Se o usuário pedir extrato / últimas transações / histórico:
-  - chame get_transactions(user_id=<id_do_usuario>, limit=10, type/categoria se aplicável)
-  - passe o JSON retornado para o CommsAgent formatar.
-
+DEV_MODE_INSTRUCTION = """
+CONTEXTO DE USUÁRIO (DEV MODE):
+- Atualmente estamos em desenvolvimento sem login real.
+- Use SEMPRE o seguinte ID de usuário para TODAS as operações de banco: "5511999999999".
+- Ao iniciar qualquer fluxo de escrita (como salvar transação), chame `get_or_create_user("5511999999999", "Dev User")` para garantir que ele existe.
 """
 
 
 def build_orchestrator_agent(model) -> LlmAgent:
     finance = build_finance_agent(model=model)
     comms = build_comms_agent(model=model)
+    database = build_database_agent(model=model)
 
-    finance_tool = agent_tool.AgentTool(agent=finance)
+    # Monta a instrução final dinamicamente
+    final_instruction = ORCHESTRATOR_INSTRUCTION
+    if os.getenv("LIFEOS_DEV_MODE", "false").lower() == "true":
+        final_instruction = DEV_MODE_INSTRUCTION + "\n" + final_instruction
+
     comms_tool = agent_tool.AgentTool(agent=comms)
+    database_tool = agent_tool.AgentTool(agent=database)
 
     return LlmAgent(
         name="Orchestrator",
         model=model,
         description="Agente orquestrador do LifeOS",
-        instruction=ORCHESTRATOR_INSTRUCTION,
+        instruction=final_instruction,
         tools=[
-            has_pending_transaction,
-            get_pending_transaction,
-            set_pending_transaction,
-            clear_pending_transaction,
             is_finance_related,
-            apply_confirmation,
-            print_transaction_payload,
-            finance_tool,
-            comms_tool,
-            init_db,
-            upsert_user,
-            save_transaction,
-            get_transactions,
+            process_finance_input,
+            database_tool,
+            comms_tool
         ],
-        sub_agents=[finance, comms],
+        sub_agents=[comms, database],
     )
+

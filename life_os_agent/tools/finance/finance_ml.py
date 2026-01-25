@@ -20,6 +20,8 @@ def predict_category_ptbr(text: str, model_path: Optional[str] = None) -> Dict[s
     if model_path is None:
         model_path = os.getenv("LIFEOS_MODEL_PATH", "models/expense_clf_tfidf_nb_ptbr.joblib")
     model = _load_model(model_path)
+    print(f"DEBUG ML Input: '{text}'")
     proba = model.predict_proba([text])[0]
+    print("PROBABILIDADES: ", proba)
     idx = int(np.argmax(proba))
     return {"status": "success", "category": str(model.classes_[idx]), "confidence": float(proba[idx])}

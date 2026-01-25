@@ -17,7 +17,7 @@ services:
     networks:
       - evolution_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -35,7 +35,7 @@ services:
     networks:
       - evolution_network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -48,7 +48,7 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      - .env.evolution
+      - .env
     volumes:
       - evolution_instances:/evolution/instances
     networks:
@@ -66,20 +66,22 @@ services:
       context: .
       dockerfile: Dockerfile.agent
     restart: always
+    ports:
+      - "8000:8000"
     env_file:
       - .env
     volumes:
-      - lifeos_data:/data
+      - ./life_os_agent/database:/app/life_os_agent/database
     networks:
       - evolution_network
-    depends_on:
-      - evolution-api
+    #depends_on:
+    #  - evolution-api
 
 volumes:
   postgres_data:
   redis_data:
   evolution_instances:
-  lifeos_data:
+
 
 networks:
   evolution_network:

@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar código fonte
 COPY life_os_agent/ ./life_os_agent/
-COPY database/ ./database/
+#COPY database/ ./database/
 
 # Criar diretório para o banco de dados
 RUN mkdir -p /data
@@ -23,7 +23,9 @@ COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
 ENV PYTHONPATH=/app
-ENV DB_PATH=/data/lifeos.db
+ENV DB_PATH=/app/life_os_agent/database/lifeos.db
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["python", "-m", "life_os_agent.agent"]
+WORKDIR /app
+RUN pwd 
+CMD ["adk", "web", "--host", "0.0.0.0", "."]

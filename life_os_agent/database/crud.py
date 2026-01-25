@@ -60,7 +60,13 @@ def add_transaction(
     if transaction_type not in ("income", "expense"):
         return {"status": "error", "error": "type must be 'income' or 'expense'"}
 
-    date = date or datetime.now().isoformat()
+    
+    # Validação e correção de data
+    if not date or len(date) < 10:
+        date = datetime.now().isoformat()
+    # Se vier só a data (2025-01-01), adiciona hora atual pra não quebrar ordenação
+    elif len(date) == 10:
+        date = f"{date}T{datetime.now().strftime('%H:%M:%S')}"
 
     with get_connection() as conn:
         cursor = conn.cursor()
@@ -143,6 +149,47 @@ def get_expenses_by_category(
         cursor = conn.cursor()
         cursor.execute(query, params)
         return [dict(row) for row in cursor.fetchall()]
+
+
+
+def update_transaction(
+    user_id: str,
+    transaction_id: int,
+    description: Optional[str] = None,
+    amount: Optional[float] = None,
+    category: Optional[str] = None,
+    transaction_type: Optional[str] = None,
+) -> Dict[str, Any]:
+    updates = []
+    params = []
+
+    if description is not None:
+        updates.append("description = ?")
+        params.append(description)
+    if amount is not None:
+        updates.append("amount = ?")
+        params.append(amount)
+    if category is not None:
+        updates.append("category = ?")
+        params.append(category)
+    if transaction_type is not None:
+        updates.append("type = ?")
+        params.append(transaction_type)
+        
+    if not updates:
+        return {"status": "error", "error": "No fields to update"}
+
+    params.append(transaction_id)
+    params.append(user_id)
+
+    query = f"UPDATE transactions SET {', '.join(updates)} WHERE id = ? AND user_id = ?"
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        if cursor.rowcount == 0:
+             return {"status": "error", "error": "Transaction not found or access denied"}
+        return {"status": "ok", "updated": cursor.rowcount}
 
 
 def delete_transaction(transaction_id: int, user_id: str) -> Dict[str, Any]:

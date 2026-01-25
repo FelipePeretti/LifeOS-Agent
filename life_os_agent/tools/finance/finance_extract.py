@@ -37,11 +37,34 @@ def extract_amount_brl(text: str, default_currency: str = "BRL") -> Dict[str, An
             return {"status": "success", "amount": float(val), "currency": default_currency}
     return {"status": "success", "amount": None, "currency": default_currency}
 
+
+_STOP_WORDS = {
+    "o", "a", "os", "as", "um", "uma", "uns", "umas",
+    "de", "do", "da", "dos", "das",
+    "em", "no", "na", "nos", "nas",
+    "com", "por", "para", "pra", "pelo", "pela",
+    "e", "ou", "que", "foi",
+    "gastei", "paguei", "compra", "comprei", "pagamento", "transferencia", "transferência",
+    "valor", "custo", "reais", "real", "r$"
+}
+
 def clean_description(text: str) -> Dict[str, Any]:
     if not text:
         return {"status": "error", "error": "empty_text"}
+    
+    # 1. Remove valores numéricos (preserva texto)
     cleaned = _amount_pattern.sub(" ", text)
-    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    
+    # 2. Normalização básica
+    cleaned = cleaned.lower()
+    
+    # 3. Remove stop words e tokens irrelevantes
+    tokens = cleaned.split()
+    filtered_tokens = [t for t in tokens if t not in _STOP_WORDS]
+    
+    # Reconstrói string
+    cleaned = " ".join(filtered_tokens).strip()
+    
     return {"status": "success", "description": cleaned}
 
 def detect_direction(text: str) -> Dict[str, Any]:

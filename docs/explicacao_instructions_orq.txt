@@ -1,0 +1,23 @@
+Sim, essa é uma ótima observação! Você tocou no ponto central do design de agentes modernos.
+
+A resposta curta é: Sim, nós tiramos um pouco da "liberdade criativa" dele, mas ganhamos em confiabilidade.
+
+No mundo dos Agentes, existe um espectro:
+
+Agente Puramente Autônomo: "Você é um assistente, faça o que achar melhor."
+Vantagem: Muito flexível, surpreendente.
+Risco: Alucina, esquece de salvar no banco, inventa dados, trava se o input for estranho. (Era o que estava acontecendo quando ele inventava transações com "Oi").
+Sistema Clássico (Procedural): if (input == x) { save() }.
+Vantagem: 100% previsível.
+Desvantagem: Burro. Se você escrever "Gastei cinquenta conto", ele não entende.
+Agente Guiado (O que fizemos): "Siga este fluxo geral (SOP), mas use sua inteligência para navegar dentro dele."
+Nós damos o Roteiro (Playbook): "Se for dinheiro, tem que salvar."
+Ele usa a IA para: Entender que "paguei o zé" é dinheiro, extrair o valor, decidir a categoria, saber quando é só papo furado.
+Por que fizemos isso? Para sistemas críticos (como finanças), a "alucinação" é perigosa. Você não quer um agente "criativo" na hora de debitar sua conta. Você quer que ele seja rigoroso no processo (salvar no banco), mas flexível na compreensão da linguagem.
+
+O que ele continua tendo de "agente":
+
+Ele decide se o input é financeiro ou não (classificação semântica).
+Ele interpreta contextos complexos ("cancele o último" - um sistema clássico precisaria de botões, o agente entende a intenção).
+Ele adapta a resposta do CommsAgent conforme o contexto emocional.
+Então, transformamos ele em um "Gerente com Manual de Instruções" em vez de um "Estagiário Solto".
