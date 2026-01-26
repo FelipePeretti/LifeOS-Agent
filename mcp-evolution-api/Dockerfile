@@ -15,6 +15,7 @@ WORKDIR /app
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/.env.example ./.env.example
+COPY --from=builder /app/.env.evolution ./.env.evolution
 
 RUN npm ci --only=production
 

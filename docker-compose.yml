@@ -48,7 +48,7 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      - .env
+      - ./mcp-evolution-api/.env.evolution
     volumes:
       - evolution_instances:/evolution/instances
     networks:
@@ -72,7 +72,7 @@ services:
       - .env
     volumes:
       - ./life_os_agent/database:/app/life_os_agent/database
-      - ./life_os_agent/temp_audio:/app/temp_audio
+      - ./life_os_agent/temp_audio:/app/life_os_agent/temp_audio
     networks:
       - evolution_network
     #depends_on:

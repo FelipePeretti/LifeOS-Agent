@@ -12,7 +12,7 @@
     "start": "node dist/index.js",
     "dev": "ts-node --esm src/index.ts",
     "docker:build": "docker build -t mcp-evolution-api .",
-    "docker:run": "docker run -p 3000:3000 --env-file .env mcp-evolution-api",
+    "docker:run": "docker run -p 3000:3000 --env-file .env.evolution mcp-evolution-api",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
