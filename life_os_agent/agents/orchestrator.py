@@ -11,6 +11,7 @@ from .strategist import build_strategist_agent
 
 
 from life_os_agent.tools.finance.transaction_pipeline import is_finance_related
+from life_os_agent.tools.finance.finance_unified import process_finance_input
 
 ORCHESTRATOR_INSTRUCTION = """
 Você é o Orquestrador do LifeOS.
@@ -24,9 +25,8 @@ SEU FLUXO DE TRABALHO:
    - Responda você mesmo.
 
 3. Se for FINANCEIRO:
-   - CHAME O `FinanceAgent` passando o texto original (ou transcrito).
-   - O `FinanceAgent` retornará um JSON estruturado (String).
-   - IMEDIATAMENTE analise esse JSON (NÃO devolva ele pro usuário):
+   - Chame a ferramenta `process_finance_input(text)` passando o texto original (ou transcrito).
+   - Analise o JSON retornado por ela:
      - Se `action == "save_transaction"`: CHAME O `DatabaseAgent`. 
        - PRIMEIRO garanta que o usuário existe (`get_or_create_user` se necessário).
        - DEPOIS use `add_transaction` com o ID correto.
@@ -45,6 +45,7 @@ SEU FLUXO DE TRABALHO:
 
 6. Se for PERGUNTA ESTRATÉGICA, DE ANÁLISE ou OPINIÃO ("Posso gastar?", "Como estou esse mês?"):
    - CHAME O `StrategistAgent`.
+   - Passe a análise dele para o `CommsAgent` dar a resposta final.
 
 7. FINALIZAÇÃO:
    - Sempre que fizer uma operação de banco, passe o resultado final para o `CommsAgent` dar o feedback ao usuário.
@@ -66,8 +67,7 @@ CONTEXTO DE USUÁRIO (DEV MODE):
 
 
 def build_orchestrator_agent(model) -> LlmAgent:
-    finance = build_finance_agent(model=model)
-    finance_tool = agent_tool.AgentTool(agent=finance)
+    # finance = build_finance_agent(model=model) -> Removido em favor de tool direta
     comms = build_comms_agent(model=model)
     database = build_database_agent(model=model)
     perception = build_perception_agent(model=model)
@@ -91,12 +91,12 @@ def build_orchestrator_agent(model) -> LlmAgent:
         instruction=final_instruction,
         tools=[
             is_finance_related,
-            finance_tool,
+            process_finance_input, # Tool direta
             database_tool,
             comms_tool,
             perception_tool,
             strategist_tool
         ],
-        sub_agents=[finance, comms, database, perception, strategist],
+        sub_agents=[comms, database, perception, strategist], # Finance removido
     )
 
