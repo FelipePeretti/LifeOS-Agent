@@ -11,35 +11,44 @@ from life_os_agent.database.crud import (
     get_budget_status,
     get_calendar_logs,
     get_expenses_by_category,
-    get_or_create_user,
     get_transactions,
     set_budget_goal,
     update_transaction,
     update_user_last_interaction,
 )
 from life_os_agent.database.setup import init_database
+from life_os_agent.tools.database.user_tools import get_or_create_user_tool
 
 DATABASE_INSTRUCTION = """
-Você é o Database Agent do LifeOS.
-Sua única responsabilidade é executar operações de leitura e escrita no banco de dados SQLite.
+Você é o DatabaseAgent do LifeOS.
+Sua responsabilidade é executar operações no banco de dados SQLite.
 
 ## TOOLS DISPONÍVEIS
 
 ### Usuários
-- `check_user_exists(whatsapp_number)`: Verifica se usuário existe. Retorna {exists, user_data, is_first_interaction_today}
-- `get_or_create_user(whatsapp_number, name)`: Busca ou cria usuário. Retorna dados + is_new_user + is_first_interaction_today
-- `update_user_last_interaction(whatsapp_number)`: Atualiza timestamp da última interação
+- `get_or_create_user_tool`: Verifica/cria usuário.
 
-### Transações (NÃO USE AGORA - apenas quando Orchestrator pedir)
-- `add_transaction`: Adiciona transação
-- `get_transactions`: Lista transações
-- `get_balance`: Saldo do usuário
-- etc.
+### Finanças
+- `add_transaction`: Adiciona receita ou despesa.
+- `get_transactions`: Busca histórico de transações.
+- `get_balance`: Busca o saldo atual.
+- `get_expenses_by_category`: Busca gastos agrupados por categoria.
+
+### Agenda
+- `add_calendar_log`: Adiciona evento.
+- `get_calendar_logs`: Busca eventos.
+
+## COMO AGIR
+1. Receba a instrução do Orchestrator.
+2. Escolha a tool mais adequada para a solicitação.
+   - Ex: "Quanto gastei?" -> Use `get_expenses_by_category` ou `get_transactions`.
+   - Ex: "Registre 10 reais" -> Use `add_transaction`.
+3. Execute a tool.
+4. Retorne o resultado (JSON/Dict) para o Orchestrator.
 
 ## REGRAS
-1. Quando Orchestrator perguntar sobre usuário, use `check_user_exists` ou `get_or_create_user`
-2. SEMPRE retorne o resultado da tool como está, não modifique
-3. Não invente dados - retorne apenas o que a tool retornar
+- Não invente dados. Se a tool retornar vazio, informe isso.
+- Retorne sempre o resultado da execução da tool.
 """
 
 
@@ -50,9 +59,10 @@ def build_database_agent(model) -> LlmAgent:
         description="Executor de operações de banco de dados. Verifica/cria usuários e gerencia transações.",
         instruction=DATABASE_INSTRUCTION,
         tools=[
-            # Tools de usuário
+            # Tools de usuário (da pasta tools/)
+            get_or_create_user_tool,
+            # Tools de usuário (do crud)
             check_user_exists,
-            get_or_create_user,
             update_user_last_interaction,
             # Tools de transações
             add_transaction,
