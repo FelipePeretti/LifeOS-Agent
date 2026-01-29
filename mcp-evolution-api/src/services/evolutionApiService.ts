@@ -1,11 +1,11 @@
 import axios from "axios";
 import { config } from "../config.js";
-import { 
-  ApiInfo, 
-  InstanceStatus, 
-  SendTextMessageRequest, 
-  SendTextMessageResponse, 
-  CheckNumberRequest, 
+import {
+  ApiInfo,
+  InstanceStatus,
+  SendTextMessageRequest,
+  SendTextMessageResponse,
+  CheckNumberRequest,
   CheckNumberResponse,
   Contact,
   Chat,
@@ -29,7 +29,7 @@ import {
   WebhookConfig,
   ChatwootConfig,
   TypebotConfig,
-  InstanceConfig
+  InstanceConfig,
 } from "../types.js";
 
 // Cliente Axios configurado para a Evolution API
@@ -37,8 +37,8 @@ const apiClient = axios.create({
   baseURL: config.evolutionApi.baseUrl,
   headers: {
     "Content-Type": "application/json",
-    "apikey": config.evolutionApi.apiKey
-  }
+    apikey: config.evolutionApi.apiKey,
+  },
 });
 
 // Classe de serviço para a Evolution API
@@ -67,7 +67,9 @@ export class EvolutionApiService {
   // Verificar status da instância
   async getInstanceStatus(): Promise<InstanceStatus> {
     try {
-      const response = await apiClient.get<InstanceStatus>(`/instance/connectionState/${this.instanceId}`);
+      const response = await apiClient.get<InstanceStatus>(
+        `/instance/connectionState/${this.instanceId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao verificar status da instância:", error);
@@ -76,11 +78,14 @@ export class EvolutionApiService {
   }
 
   // Criar uma nova instância
-  async createInstance(instanceName: string, config?: InstanceConfig): Promise<any> {
+  async createInstance(
+    instanceName: string,
+    config?: InstanceConfig,
+  ): Promise<any> {
     try {
-      const response = await apiClient.post('/instance/create', {
+      const response = await apiClient.post("/instance/create", {
         instanceName,
-        ...config
+        ...config,
       });
       return response.data;
     } catch (error) {
@@ -92,7 +97,9 @@ export class EvolutionApiService {
   // Excluir uma instância
   async deleteInstance(): Promise<any> {
     try {
-      const response = await apiClient.delete(`/instance/delete/${this.instanceId}`);
+      const response = await apiClient.delete(
+        `/instance/delete/${this.instanceId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao excluir instância:", error);
@@ -103,7 +110,9 @@ export class EvolutionApiService {
   // Redefinir a instância
   async restartInstance(): Promise<any> {
     try {
-      const response = await apiClient.put(`/instance/restart/${this.instanceId}`);
+      const response = await apiClient.put(
+        `/instance/restart/${this.instanceId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao reiniciar instância:", error);
@@ -112,11 +121,21 @@ export class EvolutionApiService {
   }
 
   // Configurar presença da instância
-  async setPresence(presence: "available" | "unavailable" | "composing" | "recording" | "paused"): Promise<any> {
+  async setPresence(
+    presence:
+      | "available"
+      | "unavailable"
+      | "composing"
+      | "recording"
+      | "paused",
+  ): Promise<any> {
     try {
-      const response = await apiClient.post(`/instance/presence/${this.instanceId}`, {
-        presence
-      });
+      const response = await apiClient.post(
+        `/instance/presence/${this.instanceId}`,
+        {
+          presence,
+        },
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao definir presença:", error);
@@ -127,7 +146,9 @@ export class EvolutionApiService {
   // Desconectar a instância do WhatsApp
   async logout(): Promise<any> {
     try {
-      const response = await apiClient.post(`/instance/logout/${this.instanceId}`);
+      const response = await apiClient.post(
+        `/instance/logout/${this.instanceId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao desconectar instância:", error);
@@ -140,7 +161,10 @@ export class EvolutionApiService {
   // Configurar Webhook
   async setWebhook(webhook: WebhookConfig): Promise<any> {
     try {
-      const response = await apiClient.post(`/webhook/set/${this.instanceId}`, webhook);
+      const response = await apiClient.post(
+        `/webhook/set/${this.instanceId}`,
+        webhook,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao configurar webhook:", error);
@@ -164,7 +188,10 @@ export class EvolutionApiService {
   // Definir configurações da instância
   async setSettings(settings: any): Promise<any> {
     try {
-      const response = await apiClient.post(`/settings/set/${this.instanceId}`, settings);
+      const response = await apiClient.post(
+        `/settings/set/${this.instanceId}`,
+        settings,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao definir configurações:", error);
@@ -186,16 +213,29 @@ export class EvolutionApiService {
   // ===== ENVIO DE MENSAGENS =====
 
   // Enviar mensagem de texto
-  async sendTextMessage({ number, text, options }: SendTextMessageRequest): Promise<SendTextMessageResponse> {
+  async sendTextMessage({
+    number,
+    text,
+    options,
+  }: SendTextMessageRequest): Promise<SendTextMessageResponse> {
     try {
-      const response = await apiClient.post<SendTextMessageResponse>(`/message/text/${this.instanceId}`, {
+      const payload = {
         number,
-        options: options || { delay: 1200 },
-        textMessage: { text }
-      });
+        text,
+      };
+
+      // Evolution API v2 usa /message/sendText
+      const response = await apiClient.post<SendTextMessageResponse>(
+        `/message/sendText/${this.instanceId}`,
+        payload,
+      );
       return response.data;
-    } catch (error) {
-      console.error("Erro ao enviar mensagem de texto:", error);
+    } catch (error: any) {
+      // Logs vão para stderr para não interferir com o protocolo MCP (JSON-RPC)
+      console.error(
+        "[MCP] Erro ao enviar mensagem:",
+        error?.response?.data || error.message,
+      );
       throw error;
     }
   }
@@ -203,7 +243,10 @@ export class EvolutionApiService {
   // Enviar template
   async sendTemplate(data: SendTemplateRequest): Promise<any> {
     try {
-      const response = await apiClient.post(`/message/template/${this.instanceId}`, data);
+      const response = await apiClient.post(
+        `/message/template/${this.instanceId}`,
+        data,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar template:", error);
@@ -214,7 +257,10 @@ export class EvolutionApiService {
   // Enviar status
   async sendStatus(data: SendStatusRequest): Promise<any> {
     try {
-      const response = await apiClient.post(`/message/status/${this.instanceId}`, data);
+      const response = await apiClient.post(
+        `/message/status/${this.instanceId}`,
+        data,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar status:", error);
@@ -225,7 +271,10 @@ export class EvolutionApiService {
   // Enviar mídia
   async sendMedia(data: SendMediaRequest): Promise<any> {
     try {
-      const response = await apiClient.post(`/message/media/${this.instanceId}`, data);
+      const response = await apiClient.post(
+        `/message/media/${this.instanceId}`,
+        data,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar mídia:", error);
@@ -236,7 +285,10 @@ export class EvolutionApiService {
   // Enviar áudio WhatsApp
   async sendAudio(data: SendAudioRequest): Promise<any> {
     try {
-      const response = await apiClient.post(`/message/audio/${this.instanceId}`, data);
+      const response = await apiClient.post(
+        `/message/audio/${this.instanceId}`,
+        data,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar áudio:", error);
@@ -247,7 +299,10 @@ export class EvolutionApiService {
   // Enviar sticker
   async sendSticker(data: SendStickerRequest): Promise<any> {
     try {
-      const response = await apiClient.post(`/message/sticker/${this.instanceId}`, data);
+      const response = await apiClient.post(
+        `/message/sticker/${this.instanceId}`,
+        data,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar sticker:", error);
@@ -258,7 +313,10 @@ export class EvolutionApiService {
   // Enviar localização
   async sendLocation(data: SendLocationRequest): Promise<any> {
     try {
-      const response = await apiClient.post(`/message/location/${this.instanceId}`, data);
+      const response = await apiClient.post(
+        `/message/location/${this.instanceId}`,
+        data,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar localização:", error);
@@ -269,7 +327,10 @@ export class EvolutionApiService {
   // Enviar contato
   async sendContact(data: SendContactRequest): Promise<any> {
     try {
-      const response = await apiClient.post(`/message/contact/${this.instanceId}`, data);
+      const response = await apiClient.post(
+        `/message/contact/${this.instanceId}`,
+        data,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar contato:", error);
@@ -280,7 +341,10 @@ export class EvolutionApiService {
   // Enviar reação
   async sendReaction(data: SendReactionRequest): Promise<any> {
     try {
-      const response = await apiClient.post(`/message/reaction/${this.instanceId}`, data);
+      const response = await apiClient.post(
+        `/message/reaction/${this.instanceId}`,
+        data,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar reação:", error);
@@ -291,7 +355,10 @@ export class EvolutionApiService {
   // Enviar enquete
   async sendPoll(data: SendPollRequest): Promise<any> {
     try {
-      const response = await apiClient.post(`/message/poll/${this.instanceId}`, data);
+      const response = await apiClient.post(
+        `/message/poll/${this.instanceId}`,
+        data,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar enquete:", error);
@@ -302,7 +369,10 @@ export class EvolutionApiService {
   // Enviar lista
   async sendList(data: SendListRequest): Promise<any> {
     try {
-      const response = await apiClient.post(`/message/list/${this.instanceId}`, data);
+      const response = await apiClient.post(
+        `/message/list/${this.instanceId}`,
+        data,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar lista:", error);
@@ -313,11 +383,16 @@ export class EvolutionApiService {
   // ===== CONTROLADOR DE CHAT =====
 
   // Verificar se um número é do WhatsApp
-  async checkWhatsAppNumber({ phone }: CheckNumberRequest): Promise<CheckNumberResponse> {
+  async checkWhatsAppNumber({
+    phone,
+  }: CheckNumberRequest): Promise<CheckNumberResponse> {
     try {
-      const response = await apiClient.post<CheckNumberResponse>(`/chat/whatsappNumbers/${this.instanceId}`, {
-        numbers: [phone]
-      });
+      const response = await apiClient.post<CheckNumberResponse>(
+        `/chat/whatsappNumbers/${this.instanceId}`,
+        {
+          numbers: [phone],
+        },
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao verificar número de WhatsApp:", error);
@@ -328,9 +403,12 @@ export class EvolutionApiService {
   // Marcar mensagem como lida
   async markMessageAsRead(messageId: string): Promise<any> {
     try {
-      const response = await apiClient.put(`/chat/markMessageAsRead/${this.instanceId}`, {
-        messageId
-      });
+      const response = await apiClient.put(
+        `/chat/markMessageAsRead/${this.instanceId}`,
+        {
+          messageId,
+        },
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao marcar mensagem como lida:", error);
@@ -341,10 +419,13 @@ export class EvolutionApiService {
   // Arquivar chat
   async archiveChat(number: string): Promise<any> {
     try {
-      const response = await apiClient.put(`/chat/archiveChat/${this.instanceId}`, {
-        phone: number,
-        action: "archive" // ou "unarchive"
-      });
+      const response = await apiClient.put(
+        `/chat/archiveChat/${this.instanceId}`,
+        {
+          phone: number,
+          action: "archive", // ou "unarchive"
+        },
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao arquivar chat:", error);
@@ -355,7 +436,9 @@ export class EvolutionApiService {
   // Excluir mensagem para todos
   async deleteMessageForEveryone(messageId: string): Promise<any> {
     try {
-      const response = await apiClient.delete(`/chat/deleteMessageForEveryone/${this.instanceId}/${messageId}`);
+      const response = await apiClient.delete(
+        `/chat/deleteMessageForEveryone/${this.instanceId}/${messageId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao excluir mensagem para todos:", error);
@@ -366,10 +449,13 @@ export class EvolutionApiService {
   // Definir presença no chat
   async sendPresence(presence: string, chatJid: string): Promise<any> {
     try {
-      const response = await apiClient.post(`/chat/presence/${this.instanceId}`, {
-        presence,
-        chatJid
-      });
+      const response = await apiClient.post(
+        `/chat/presence/${this.instanceId}`,
+        {
+          presence,
+          chatJid,
+        },
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao definir presença no chat:", error);
@@ -380,9 +466,12 @@ export class EvolutionApiService {
   // Buscar foto de perfil
   async fetchProfilePictureUrl(number: string): Promise<any> {
     try {
-      const response = await apiClient.post(`/chat/fetchProfilePictureUrl/${this.instanceId}`, {
-        number
-      });
+      const response = await apiClient.post(
+        `/chat/fetchProfilePictureUrl/${this.instanceId}`,
+        {
+          number,
+        },
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar foto de perfil:", error);
@@ -393,7 +482,9 @@ export class EvolutionApiService {
   // Buscar contatos
   async fetchContacts(): Promise<{ data: Contact[] }> {
     try {
-      const response = await apiClient.post<{ data: Contact[] }>(`/chat/contacts/${this.instanceId}`);
+      const response = await apiClient.post<{ data: Contact[] }>(
+        `/chat/contacts/${this.instanceId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar contatos:", error);
@@ -404,10 +495,13 @@ export class EvolutionApiService {
   // Buscar mensagens
   async findMessages(query: string, chatId?: string): Promise<any> {
     try {
-      const response = await apiClient.post(`/chat/findMessages/${this.instanceId}`, {
-        query,
-        chatId
-      });
+      const response = await apiClient.post(
+        `/chat/findMessages/${this.instanceId}`,
+        {
+          query,
+          chatId,
+        },
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar mensagens:", error);
@@ -418,7 +512,9 @@ export class EvolutionApiService {
   // Buscar mensagens de status
   async findStatusMessages(): Promise<any> {
     try {
-      const response = await apiClient.post(`/chat/findStatusMessages/${this.instanceId}`);
+      const response = await apiClient.post(
+        `/chat/findStatusMessages/${this.instanceId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar mensagens de status:", error);
@@ -429,10 +525,13 @@ export class EvolutionApiService {
   // Atualizar mensagem
   async updateMessage(messageId: string, text: string): Promise<any> {
     try {
-      const response = await apiClient.put(`/chat/updateMessage/${this.instanceId}`, {
-        messageId,
-        text
-      });
+      const response = await apiClient.put(
+        `/chat/updateMessage/${this.instanceId}`,
+        {
+          messageId,
+          text,
+        },
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao atualizar mensagem:", error);
@@ -443,7 +542,9 @@ export class EvolutionApiService {
   // Buscar conversas
   async fetchChats(): Promise<{ data: Chat[] }> {
     try {
-      const response = await apiClient.get<{ data: Chat[] }>(`/chat/findChats/${this.instanceId}`);
+      const response = await apiClient.get<{ data: Chat[] }>(
+        `/chat/findChats/${this.instanceId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar conversas:", error);
@@ -456,7 +557,9 @@ export class EvolutionApiService {
   // Buscar perfil de negócios
   async fetchBusinessProfile(): Promise<any> {
     try {
-      const response = await apiClient.post(`/profile/fetchBusinessProfile/${this.instanceId}`);
+      const response = await apiClient.post(
+        `/profile/fetchBusinessProfile/${this.instanceId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar perfil de negócios:", error);
@@ -467,7 +570,9 @@ export class EvolutionApiService {
   // Buscar perfil
   async fetchProfile(): Promise<ProfileInfo> {
     try {
-      const response = await apiClient.post<ProfileInfo>(`/profile/fetchProfile/${this.instanceId}`);
+      const response = await apiClient.post<ProfileInfo>(
+        `/profile/fetchProfile/${this.instanceId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar perfil:", error);
@@ -478,9 +583,12 @@ export class EvolutionApiService {
   // Atualizar nome do perfil
   async updateProfileName(name: string): Promise<any> {
     try {
-      const response = await apiClient.post(`/profile/updateProfileName/${this.instanceId}`, {
-        name
-      });
+      const response = await apiClient.post(
+        `/profile/updateProfileName/${this.instanceId}`,
+        {
+          name,
+        },
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao atualizar nome do perfil:", error);
@@ -491,9 +599,12 @@ export class EvolutionApiService {
   // Atualizar status do perfil
   async updateProfileStatus(status: string): Promise<any> {
     try {
-      const response = await apiClient.post(`/profile/updateProfileStatus/${this.instanceId}`, {
-        status
-      });
+      const response = await apiClient.post(
+        `/profile/updateProfileStatus/${this.instanceId}`,
+        {
+          status,
+        },
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao atualizar status do perfil:", error);
@@ -504,9 +615,12 @@ export class EvolutionApiService {
   // Atualizar foto do perfil
   async updateProfilePicture(url: string): Promise<any> {
     try {
-      const response = await apiClient.put(`/profile/updateProfilePicture/${this.instanceId}`, {
-        url
-      });
+      const response = await apiClient.put(
+        `/profile/updateProfilePicture/${this.instanceId}`,
+        {
+          url,
+        },
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao atualizar foto do perfil:", error);
@@ -517,7 +631,9 @@ export class EvolutionApiService {
   // Remover foto do perfil
   async removeProfilePicture(): Promise<any> {
     try {
-      const response = await apiClient.delete(`/profile/removeProfilePicture/${this.instanceId}`);
+      const response = await apiClient.delete(
+        `/profile/removeProfilePicture/${this.instanceId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao remover foto do perfil:", error);
@@ -528,7 +644,9 @@ export class EvolutionApiService {
   // Buscar configurações de privacidade
   async fetchPrivacySettings(): Promise<PrivacySettings> {
     try {
-      const response = await apiClient.get<PrivacySettings>(`/profile/fetchPrivacySettings/${this.instanceId}`);
+      const response = await apiClient.get<PrivacySettings>(
+        `/profile/fetchPrivacySettings/${this.instanceId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar configurações de privacidade:", error);
@@ -537,9 +655,14 @@ export class EvolutionApiService {
   }
 
   // Atualizar configurações de privacidade
-  async updatePrivacySettings(settings: Partial<PrivacySettings>): Promise<any> {
+  async updatePrivacySettings(
+    settings: Partial<PrivacySettings>,
+  ): Promise<any> {
     try {
-      const response = await apiClient.put(`/profile/updatePrivacySettings/${this.instanceId}`, settings);
+      const response = await apiClient.put(
+        `/profile/updatePrivacySettings/${this.instanceId}`,
+        settings,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao atualizar configurações de privacidade:", error);
@@ -552,7 +675,10 @@ export class EvolutionApiService {
   // Criar grupo
   async createGroup(data: CreateGroupRequest): Promise<any> {
     try {
-      const response = await apiClient.post(`/group/create/${this.instanceId}`, data);
+      const response = await apiClient.post(
+        `/group/create/${this.instanceId}`,
+        data,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao criar grupo:", error);
@@ -563,10 +689,13 @@ export class EvolutionApiService {
   // Atualizar foto do grupo
   async updateGroupPicture(groupId: string, url: string): Promise<any> {
     try {
-      const response = await apiClient.put(`/group/updateGroupPicture/${this.instanceId}`, {
-        groupId,
-        url
-      });
+      const response = await apiClient.put(
+        `/group/updateGroupPicture/${this.instanceId}`,
+        {
+          groupId,
+          url,
+        },
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao atualizar foto do grupo:", error);
@@ -577,10 +706,13 @@ export class EvolutionApiService {
   // Atualizar assunto do grupo
   async updateGroupSubject(groupId: string, subject: string): Promise<any> {
     try {
-      const response = await apiClient.put(`/group/updateGroupSubject/${this.instanceId}`, {
-        groupId,
-        subject
-      });
+      const response = await apiClient.put(
+        `/group/updateGroupSubject/${this.instanceId}`,
+        {
+          groupId,
+          subject,
+        },
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao atualizar assunto do grupo:", error);
@@ -589,12 +721,18 @@ export class EvolutionApiService {
   }
 
   // Atualizar descrição do grupo
-  async updateGroupDescription(groupId: string, description: string): Promise<any> {
+  async updateGroupDescription(
+    groupId: string,
+    description: string,
+  ): Promise<any> {
     try {
-      const response = await apiClient.put(`/group/updateGroupDescription/${this.instanceId}`, {
-        groupId,
-        description
-      });
+      const response = await apiClient.put(
+        `/group/updateGroupDescription/${this.instanceId}`,
+        {
+          groupId,
+          description,
+        },
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao atualizar descrição do grupo:", error);
@@ -605,7 +743,9 @@ export class EvolutionApiService {
   // Buscar código de convite
   async fetchInviteCode(groupId: string): Promise<any> {
     try {
-      const response = await apiClient.get(`/group/fetchInviteCode/${this.instanceId}/${groupId}`);
+      const response = await apiClient.get(
+        `/group/fetchInviteCode/${this.instanceId}/${groupId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar código de convite:", error);
@@ -616,7 +756,9 @@ export class EvolutionApiService {
   // Aceitar código de convite
   async acceptInviteCode(code: string): Promise<any> {
     try {
-      const response = await apiClient.get(`/group/acceptInviteCode/${this.instanceId}/${code}`);
+      const response = await apiClient.get(
+        `/group/acceptInviteCode/${this.instanceId}/${code}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao aceitar código de convite:", error);
@@ -627,7 +769,9 @@ export class EvolutionApiService {
   // Revogar código de convite
   async revokeInviteCode(groupId: string): Promise<any> {
     try {
-      const response = await apiClient.put(`/group/revokeInviteCode/${this.instanceId}/${groupId}`);
+      const response = await apiClient.put(
+        `/group/revokeInviteCode/${this.instanceId}/${groupId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao revogar código de convite:", error);
@@ -638,10 +782,13 @@ export class EvolutionApiService {
   // Enviar convite de grupo
   async sendGroupInvite(groupId: string, numbers: string[]): Promise<any> {
     try {
-      const response = await apiClient.post(`/group/sendGroupInvite/${this.instanceId}`, {
-        groupId,
-        numbers
-      });
+      const response = await apiClient.post(
+        `/group/sendGroupInvite/${this.instanceId}`,
+        {
+          groupId,
+          numbers,
+        },
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao enviar convite de grupo:", error);
@@ -652,7 +799,9 @@ export class EvolutionApiService {
   // Buscar grupo por código de convite
   async findGroupByInviteCode(code: string): Promise<any> {
     try {
-      const response = await apiClient.get(`/group/findGroupByInviteCode/${this.instanceId}/${code}`);
+      const response = await apiClient.get(
+        `/group/findGroupByInviteCode/${this.instanceId}/${code}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar grupo por código de convite:", error);
@@ -663,7 +812,9 @@ export class EvolutionApiService {
   // Buscar grupo por JID
   async findGroupByJid(groupId: string): Promise<GroupInfo> {
     try {
-      const response = await apiClient.get<GroupInfo>(`/group/findGroupByJid/${this.instanceId}/${groupId}`);
+      const response = await apiClient.get<GroupInfo>(
+        `/group/findGroupByJid/${this.instanceId}/${groupId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar grupo por JID:", error);
@@ -674,7 +825,9 @@ export class EvolutionApiService {
   // Buscar todos os grupos
   async fetchAllGroups(): Promise<{ data: GroupInfo[] }> {
     try {
-      const response = await apiClient.get<{ data: GroupInfo[] }>(`/group/fetchAllGroups/${this.instanceId}`);
+      const response = await apiClient.get<{ data: GroupInfo[] }>(
+        `/group/fetchAllGroups/${this.instanceId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar todos os grupos:", error);
@@ -685,7 +838,9 @@ export class EvolutionApiService {
   // Buscar membros do grupo
   async findGroupMembers(groupId: string): Promise<any> {
     try {
-      const response = await apiClient.get(`/group/findGroupMembers/${this.instanceId}/${groupId}`);
+      const response = await apiClient.get(
+        `/group/findGroupMembers/${this.instanceId}/${groupId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar membros do grupo:", error);
@@ -696,7 +851,10 @@ export class EvolutionApiService {
   // Atualizar membros do grupo
   async updateGroupMembers(data: GroupUpdateRequest): Promise<any> {
     try {
-      const response = await apiClient.put(`/group/updateGroupMembers/${this.instanceId}`, data);
+      const response = await apiClient.put(
+        `/group/updateGroupMembers/${this.instanceId}`,
+        data,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao atualizar membros do grupo:", error);
@@ -707,7 +865,10 @@ export class EvolutionApiService {
   // Atualizar configuração do grupo
   async updateGroupSetting(data: GroupSettingRequest): Promise<any> {
     try {
-      const response = await apiClient.put(`/group/updateGroupSetting/${this.instanceId}`, data);
+      const response = await apiClient.put(
+        `/group/updateGroupSetting/${this.instanceId}`,
+        data,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao atualizar configuração do grupo:", error);
@@ -718,10 +879,13 @@ export class EvolutionApiService {
   // Alternar mensagens efêmeras
   async toggleEphemeral(groupId: string, expiration: number): Promise<any> {
     try {
-      const response = await apiClient.put(`/group/toggleEphemeral/${this.instanceId}`, {
-        groupId,
-        expiration // 0, 86400, 604800, 7776000
-      });
+      const response = await apiClient.put(
+        `/group/toggleEphemeral/${this.instanceId}`,
+        {
+          groupId,
+          expiration, // 0, 86400, 604800, 7776000
+        },
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao alternar mensagens efêmeras:", error);
@@ -732,7 +896,9 @@ export class EvolutionApiService {
   // Sair do grupo
   async leaveGroup(groupId: string): Promise<any> {
     try {
-      const response = await apiClient.delete(`/group/leaveGroup/${this.instanceId}/${groupId}`);
+      const response = await apiClient.delete(
+        `/group/leaveGroup/${this.instanceId}/${groupId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao sair do grupo:", error);
@@ -745,7 +911,10 @@ export class EvolutionApiService {
   // Configurar Typebot
   async setTypebot(config: TypebotConfig): Promise<any> {
     try {
-      const response = await apiClient.post(`/typebot/set/${this.instanceId}`, config);
+      const response = await apiClient.post(
+        `/typebot/set/${this.instanceId}`,
+        config,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao configurar Typebot:", error);
@@ -756,9 +925,12 @@ export class EvolutionApiService {
   // Iniciar Typebot
   async startTypebot(number: string): Promise<any> {
     try {
-      const response = await apiClient.post(`/typebot/start/${this.instanceId}`, {
-        number
-      });
+      const response = await apiClient.post(
+        `/typebot/start/${this.instanceId}`,
+        {
+          number,
+        },
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao iniciar Typebot:", error);
@@ -769,7 +941,9 @@ export class EvolutionApiService {
   // Buscar configuração do Typebot
   async findTypebot(): Promise<TypebotConfig> {
     try {
-      const response = await apiClient.get<TypebotConfig>(`/typebot/find/${this.instanceId}`);
+      const response = await apiClient.get<TypebotConfig>(
+        `/typebot/find/${this.instanceId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar configuração do Typebot:", error);
@@ -780,9 +954,12 @@ export class EvolutionApiService {
   // Alterar status do Typebot
   async changeTypebotStatus(enabled: boolean): Promise<any> {
     try {
-      const response = await apiClient.post(`/typebot/changeStatus/${this.instanceId}`, {
-        enabled
-      });
+      const response = await apiClient.post(
+        `/typebot/changeStatus/${this.instanceId}`,
+        {
+          enabled,
+        },
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao alterar status do Typebot:", error);
@@ -795,7 +972,10 @@ export class EvolutionApiService {
   // Configurar Chatwoot
   async setChatwoot(config: ChatwootConfig): Promise<any> {
     try {
-      const response = await apiClient.post(`/chatwoot/set/${this.instanceId}`, config);
+      const response = await apiClient.post(
+        `/chatwoot/set/${this.instanceId}`,
+        config,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao configurar Chatwoot:", error);
@@ -806,11 +986,13 @@ export class EvolutionApiService {
   // Buscar configuração do Chatwoot
   async findChatwoot(): Promise<ChatwootConfig> {
     try {
-      const response = await apiClient.get<ChatwootConfig>(`/chatwoot/find/${this.instanceId}`);
+      const response = await apiClient.get<ChatwootConfig>(
+        `/chatwoot/find/${this.instanceId}`,
+      );
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar configuração do Chatwoot:", error);
       throw error;
     }
   }
-} 
+}
