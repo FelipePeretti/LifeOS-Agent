@@ -1,53 +1,83 @@
 from __future__ import annotations
+
 from google.adk.agents import LlmAgent
+
 from life_os_agent.database.crud import (
+    add_calendar_log,
     add_transaction,
-    get_transactions,
-    update_transaction,
+    check_user_exists,
     delete_transaction,
     get_balance,
-    get_expenses_by_category,
-    set_budget_goal,
     get_budget_status,
-    add_calendar_log,
     get_calendar_logs,
-    get_or_create_user
+    get_expenses_by_category,
+    get_transactions,
+    set_budget_goal,
+    update_transaction,
+    update_user_last_interaction,
 )
 from life_os_agent.database.setup import init_database
+from life_os_agent.tools.database.user_tools import get_or_create_user_tool
 
 DATABASE_INSTRUCTION = """
-Você é o Database Agent do LifeOS.
-Sua única responsabilidade é executar operações de leitura e escrita no banco de dados SQLite.
+Você é o DatabaseAgent do LifeOS.
+Sua responsabilidade é executar operações no banco de dados SQLite.
 
-REGRA DE OURO:
-- Você é um executor técnico.
-- Se o Orchestrator mandar salvar uma transação (`add_transaction`), certifique-se que o usuário existe primeiro!
-  - Se for um novo usuário, CHAME `get_or_create_user` antes de inserir.
-- Se ele pedir relatório, use as funções de `get_...`.
-- Se ele pedir alteração ou remoção, use `update_transaction` ou `delete_transaction`. Para isso, você vai precisar do ID da transação (que geralmente vem no extrato).
+## TOOLS DISPONÍVEIS
 
-Formato de Saída:
-- Retorne SEMPRE o JSON/Dict que a tool retornou.
+### Usuários
+- `get_or_create_user_tool`: Verifica/cria usuário.
+
+### Finanças
+- `add_transaction`: Adiciona receita ou despesa.
+- `get_transactions`: Busca histórico de transações.
+- `get_balance`: Busca o saldo atual.
+- `get_expenses_by_category`: Busca gastos agrupados por categoria.
+
+### Agenda
+- `add_calendar_log`: Adiciona evento.
+- `get_calendar_logs`: Busca eventos.
+
+## COMO AGIR
+1. Receba a instrução do Orchestrator.
+2. Escolha a tool mais adequada para a solicitação.
+   - Ex: "Quanto gastei?" -> Use `get_expenses_by_category` ou `get_transactions`.
+   - Ex: "Registre 10 reais" -> Use `add_transaction`.
+3. Execute a tool.
+4. Retorne o resultado (JSON/Dict) para o Orchestrator.
+
+## REGRAS
+- Não invente dados. Se a tool retornar vazio, informe isso.
+- Retorne sempre o resultado da execução da tool.
 """
+
 
 def build_database_agent(model) -> LlmAgent:
     return LlmAgent(
         name="DatabaseAgent",
         model=model,
-        description="Executor de operações de banco de dados (Salvar transações, consultar extratos, metas, etc).",
+        description="Executor de operações de banco de dados. Verifica/cria usuários e gerencia transações.",
         instruction=DATABASE_INSTRUCTION,
         tools=[
+            # Tools de usuário (da pasta tools/)
+            get_or_create_user_tool,
+            # Tools de usuário (do crud)
+            check_user_exists,
+            update_user_last_interaction,
+            # Tools de transações
             add_transaction,
             get_transactions,
             update_transaction,
             delete_transaction,
             get_balance,
             get_expenses_by_category,
+            # Tools de metas
             set_budget_goal,
             get_budget_status,
+            # Tools de calendário
             add_calendar_log,
             get_calendar_logs,
-            get_or_create_user,
-            init_database
+            # Inicialização
+            init_database,
         ],
     )
