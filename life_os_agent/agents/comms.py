@@ -1,40 +1,69 @@
 from __future__ import annotations
+
 import os
+
 from google.adk.agents import LlmAgent
+from google.adk.tools.mcp_tool import McpToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
+from mcp import StdioServerParameters
+
+# Caminho para o MCP Server do Evolution API
+MCP_SERVER_PATH = os.getenv(
+    "MCP_EVOLUTION_PATH",
+    "/app/mcp-evolution-api/dist/cli.js",
+)
 
 COMMS_INSTRUCTION = """
 Você é o Agente de Comunicação do LifeOS.
+Sua ÚNICA tarefa é enviar mensagens via WhatsApp.
 
-ENTRADA:
-Você receberá uma mensagem do Orquestrador que pode ser:
-1. Um JSON (string) com dados de transação ou histórico.
-2. Um TEXTO LIVRE (conversa, perguntas, erros).
+## COMO USAR A TOOL sendTextMessage
 
-SUA TAREFA:
-- Analise a entrada e gere a resposta final para o usuário em PT-BR.
-- Seja amigável, conciso e útil.
+Quando receber uma solicitação para enviar mensagem, use a tool sendTextMessage com:
+- number: o número de telefone (apenas números, ex: "5564999999999")
+- text: o texto da mensagem
 
-CASO 1: JSON (Finanças)
-- Se status == "need_confirmation": peça confirmação (Sim/Não) e resuma o lançamento.
-- Se status == "ok": confirme que foi salvo.
-- Se status == "transactions": formate como uma lista bonita (extrato).
-- Use formatação BRL: "R$ 33,49".
+## EXEMPLO
 
-CASO 2: TEXTO LIVRE (Conversa)
-- Se for uma mensagem do orquestrador (ex: "Input too short"), explique para o usuário ("Não entendi, pode repetir?").
-- Se for papo furado ("Oi"), responda com a personalidade do LifeOS ("Olá! Como posso ajudar nas suas finanças hoje?").
+Se recebi: "Envie para 5564999999999: Olá, tudo bem?"
 
-IMPORTANTE:
-- NUNCA retorne o JSON bruto. Sempre retorne TEXTO formatado.
+Você deve chamar:
+sendTextMessage(number="5564999999999", text="Olá, tudo bem?")
+
+## IMPORTANTE
+- SEMPRE use a tool sendTextMessage para enviar
+- O número deve conter apenas dígitos
+- Não adicione @s.whatsapp.net, a tool faz isso automaticamente
 """
 
 
-
 def build_comms_agent(model) -> LlmAgent:
+    """
+    Constrói o CommsAgent que usa o MCP do Evolution API para enviar mensagens.
+    """
+    evolution_mcp_toolset = McpToolset(
+        connection_params=StdioConnectionParams(
+            server_params=StdioServerParameters(
+                command="node",
+                args=[MCP_SERVER_PATH],
+                env={
+                    "EVOLUTION_API_URL": os.getenv(
+                        "EVOLUTION_API_URL", "http://evolution-api:8080"
+                    ),
+                    "EVOLUTION_API_KEY": os.getenv("EVOLUTION_API_KEY", ""),
+                    "EVOLUTION_API_INSTANCE": os.getenv(
+                        "EVOLUTION_API_INSTANCE", "LifeOs"
+                    ),
+                },
+            ),
+        ),
+        tool_filter=["sendTextMessage"],
+    )
+
     return LlmAgent(
         name="CommsAgent",
         model=model,
-        description="Gera a mensagem final para o usuário (PT-BR), a partir do agent_result.",
+        description="Envia mensagens via WhatsApp usando MCP Evolution API",
         instruction=COMMS_INSTRUCTION,
-        output_key="final_message",
+        tools=[evolution_mcp_toolset],
     )

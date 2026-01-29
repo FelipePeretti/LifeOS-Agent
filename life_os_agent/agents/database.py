@@ -1,17 +1,21 @@
 from __future__ import annotations
+
 from google.adk.agents import LlmAgent
+
 from life_os_agent.database.crud import (
+    add_calendar_log,
     add_transaction,
-    get_transactions,
-    update_transaction,
+    check_user_exists,
     delete_transaction,
     get_balance,
-    get_expenses_by_category,
-    set_budget_goal,
     get_budget_status,
-    add_calendar_log,
     get_calendar_logs,
-    get_or_create_user
+    get_expenses_by_category,
+    get_or_create_user,
+    get_transactions,
+    set_budget_goal,
+    update_transaction,
+    update_user_last_interaction,
 )
 from life_os_agent.database.setup import init_database
 
@@ -19,35 +23,51 @@ DATABASE_INSTRUCTION = """
 Você é o Database Agent do LifeOS.
 Sua única responsabilidade é executar operações de leitura e escrita no banco de dados SQLite.
 
-REGRA DE OURO:
-- Você é um executor técnico.
-- Se o Orchestrator mandar salvar uma transação (`add_transaction`), certifique-se que o usuário existe primeiro!
-  - Se for um novo usuário, CHAME `get_or_create_user` antes de inserir.
-- Se ele pedir relatório, use as funções de `get_...`.
-- Se ele pedir alteração ou remoção, use `update_transaction` ou `delete_transaction`. Para isso, você vai precisar do ID da transação (que geralmente vem no extrato).
+## TOOLS DISPONÍVEIS
 
-Formato de Saída:
-- Retorne SEMPRE o JSON/Dict que a tool retornou.
+### Usuários
+- `check_user_exists(whatsapp_number)`: Verifica se usuário existe. Retorna {exists, user_data, is_first_interaction_today}
+- `get_or_create_user(whatsapp_number, name)`: Busca ou cria usuário. Retorna dados + is_new_user + is_first_interaction_today
+- `update_user_last_interaction(whatsapp_number)`: Atualiza timestamp da última interação
+
+### Transações (NÃO USE AGORA - apenas quando Orchestrator pedir)
+- `add_transaction`: Adiciona transação
+- `get_transactions`: Lista transações
+- `get_balance`: Saldo do usuário
+- etc.
+
+## REGRAS
+1. Quando Orchestrator perguntar sobre usuário, use `check_user_exists` ou `get_or_create_user`
+2. SEMPRE retorne o resultado da tool como está, não modifique
+3. Não invente dados - retorne apenas o que a tool retornar
 """
+
 
 def build_database_agent(model) -> LlmAgent:
     return LlmAgent(
         name="DatabaseAgent",
         model=model,
-        description="Executor de operações de banco de dados (Salvar transações, consultar extratos, metas, etc).",
+        description="Executor de operações de banco de dados. Verifica/cria usuários e gerencia transações.",
         instruction=DATABASE_INSTRUCTION,
         tools=[
+            # Tools de usuário
+            check_user_exists,
+            get_or_create_user,
+            update_user_last_interaction,
+            # Tools de transações
             add_transaction,
             get_transactions,
             update_transaction,
             delete_transaction,
             get_balance,
             get_expenses_by_category,
+            # Tools de metas
             set_budget_goal,
             get_budget_status,
+            # Tools de calendário
             add_calendar_log,
             get_calendar_logs,
-            get_or_create_user,
-            init_database
+            # Inicialização
+            init_database,
         ],
     )
