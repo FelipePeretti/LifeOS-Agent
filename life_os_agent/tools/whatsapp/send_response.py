@@ -16,11 +16,11 @@ def send_whatsapp_response(phone_number: str, message: str) -> Dict[str, Any]:
     Envia uma mensagem de resposta via WhatsApp.
 
     Args:
-        phone_number: Número do destinatário (ex: 5564999999999)
-        message: Texto da mensagem
+        phone_number: Número do destinatário (DEVE ser o mesmo user_phone do contexto)
+        message: Texto da mensagem a ser enviada
     """
     if not phone_number:
-        return {"status": "error", "error": "Número não informado"}
+        return {"status": "error", "error": "phone_number é obrigatório"}
 
     if not message:
         return {"status": "error", "error": "Mensagem vazia"}
