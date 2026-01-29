@@ -2,18 +2,32 @@
 
 import json
 import os
+import threading
 import urllib.error
 import urllib.request
+from collections import deque
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Optional
+
+from life_os_agent.context import set_current_user
 
 ADK_API_URL = os.getenv("ADK_API_URL", "http://localhost:8000")
 WEBHOOK_PORT = int(os.getenv("WEBHOOK_PORT", "3002"))
 APP_NAME = "life_os_agent"
 
+# Cache para deduplicação de mensagens (armazena os últimos 1000 IDs)
+PROCESSED_MESSAGE_IDS = deque(maxlen=1000)
 
-def log(msg: str):
-    print(msg, flush=True)
+# Locks por usuário para garantir processamento sequencial (Fila)
+USER_LOCKS = {}
+USER_LOCKS_MUTEX = threading.Lock()
+
+
+def get_user_lock(user_id: str) -> threading.Lock:
+    with USER_LOCKS_MUTEX:
+        if user_id not in USER_LOCKS:
+            USER_LOCKS[user_id] = threading.Lock()
+        return USER_LOCKS[user_id]
 
 
 def ensure_session_exists(user_id: str, session_id: str) -> bool:
@@ -124,6 +138,7 @@ def extract_message_from_webhook(webhook_data: dict) -> Optional[dict]:
     data = webhook_data.get("data", {})
     key = data.get("key", {})
     is_from_me = key.get("fromMe", False)
+    message_id = key.get("id", "")
 
     phone_number = extract_phone_number(data, key)
     if not phone_number:
@@ -147,6 +162,7 @@ def extract_message_from_webhook(webhook_data: dict) -> Optional[dict]:
         return None
 
     return {
+        "id": message_id,
         "phone_number": phone_number,
         "push_name": push_name,
         "text": text,
@@ -157,7 +173,7 @@ def extract_message_from_webhook(webhook_data: dict) -> Optional[dict]:
 
 class WebhookHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
-        pass
+        pass  # Silencia logs padrão do servidor
 
     def do_POST(self):
         try:
@@ -168,6 +184,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
             message_info = extract_message_from_webhook(webhook_data)
 
             if message_info:
+                msg_id = message_info.get("id")
                 phone = message_info["phone_number"]
                 name = message_info.get("push_name", "")
                 text = message_info["text"]
@@ -177,16 +194,37 @@ class WebhookHandler(BaseHTTPRequestHandler):
                     self._respond(200, {"ok": True, "direction": "outgoing"})
                     return
 
-                log(f"[Webhook] {name} ({phone}): {text[:50]}...")
-                result = call_adk_agent(user_id=phone, user_name=name, message=text)
-                self._respond(200, {"ok": True, "result": result})
+                # Deduplicação: Se já processamos essa mensagem, ignora
+                if msg_id and msg_id in PROCESSED_MESSAGE_IDS:
+                    self._respond(200, {"ok": True, "ignored": "duplicate"})
+                    return
+
+                if msg_id:
+                    PROCESSED_MESSAGE_IDS.append(msg_id)
+
+                # Processamento Assíncrono (Background)
+                def process_message_background(u_phone, u_name, u_text):
+                    # Garante que mensagens do mesmo usuário sejam processadas uma por vez
+                    lock = get_user_lock(u_phone)
+                    with lock:
+                        set_current_user(u_phone, u_name)
+                        call_adk_agent(
+                            user_id=u_phone, user_name=u_name, message=u_text
+                        )
+
+                thread = threading.Thread(
+                    target=process_message_background, args=(phone, name, text)
+                )
+                thread.start()
+
+                # Responde IMEDIATAMENTE para a Evolution API não reenviar (evita loop de 5x)
+                self._respond(200, {"ok": True, "status": "processing_started"})
             else:
                 self._respond(200, {"ok": True, "ignored": True})
 
         except json.JSONDecodeError:
             self._respond(400, {"error": "Invalid JSON"})
         except Exception as e:
-            log(f"[Webhook] Erro: {e}")
             self._respond(500, {"error": str(e)})
 
     def do_GET(self):
