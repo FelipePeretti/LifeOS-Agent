@@ -1,14 +1,15 @@
 import os
 import sqlite3
 from contextlib import contextmanager
+from pathlib import Path
 
-DB_PATH = os.getenv("DB_PATH", "lifeos.db")
+_THIS_DIR = Path(__file__).parent
+_DEFAULT_DB_PATH = str(_THIS_DIR / "lifeos.db")
+DB_PATH = os.getenv("DB_PATH", _DEFAULT_DB_PATH)
 
 
 @contextmanager
 def get_connection():
-    print(f"DEBUG: Tentando conectar em: {DB_PATH}")
-    print(f"DEBUG: CWD atual: {os.getcwd()}")
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON;")
@@ -31,9 +32,18 @@ def init_database():
             CREATE TABLE IF NOT EXISTS users (
                 whatsapp_number TEXT PRIMARY KEY,
                 name TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_interaction TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        # Adiciona coluna last_interaction se não existir (para bancos existentes)
+        try:
+            cursor.execute(
+                "ALTER TABLE users ADD COLUMN last_interaction TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+            )
+        except sqlite3.OperationalError:
+            pass  # Coluna já existe
 
         # ===== TRANSACTIONS =====
         cursor.execute("""
@@ -92,7 +102,6 @@ def init_database():
             "CREATE INDEX IF NOT EXISTS idx_calendar_logs_date ON calendar_logs(event_date);"
         )
 
-    print(f"✅ Database inicializado em: {DB_PATH}")
     return {"status": "ok", "path": DB_PATH}
 
 
