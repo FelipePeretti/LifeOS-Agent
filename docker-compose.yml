@@ -70,10 +70,12 @@ services:
     environment:
       - ADK_API_URL=http://localhost:8000
       - WEBHOOK_PORT=3002
+      - DB_PATH=/data/lifeos.db
     env_file:
       - .env
     volumes:
-      - lifeos_data:/data
+      # Monta o banco local no container
+      - ./life_os_agent/database:/data
     networks:
       - evolution_network
     depends_on:
@@ -83,7 +85,6 @@ volumes:
   postgres_data:
   redis_data:
   evolution_instances:
-  lifeos_data:
 
 networks:
   evolution_network:
