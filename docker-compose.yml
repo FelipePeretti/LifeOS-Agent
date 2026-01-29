@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   # PostgreSQL - Banco de dados para Evolution API
   postgres:
@@ -17,7 +15,7 @@ services:
     networks:
       - evolution_network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -35,20 +33,20 @@ services:
     networks:
       - evolution_network
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Evolution API v2
+  # Evolution API v2.3.7+ (com suporte a remoteJidAlt para resolver LIDs)
   evolution-api:
     container_name: evolution_api
-    image: atendai/evolution-api:v2.1.1
+    image: evoapicloud/evolution-api:latest
     restart: always
     ports:
       - "8080:8080"
     env_file:
-      - ./mcp-evolution-api/.env.evolution
+      - .env.evolution
     volumes:
       - evolution_instances:/evolution/instances
     networks:
@@ -67,22 +65,25 @@ services:
       dockerfile: Dockerfile.agent
     restart: always
     ports:
-      - "8000:8000"
+      - "8000:8000" # ADK API Server
+      - "3002:3002" # Webhook
+    environment:
+      - ADK_API_URL=http://localhost:8000
+      - WEBHOOK_PORT=3002
     env_file:
       - .env
     volumes:
-      - ./life_os_agent/database:/app/life_os_agent/database
-      - ./life_os_agent/temp_audio:/app/life_os_agent/temp_audio
+      - lifeos_data:/data
     networks:
       - evolution_network
-    #depends_on:
-    #  - evolution-api
+    depends_on:
+      - evolution-api
 
 volumes:
   postgres_data:
   redis_data:
   evolution_instances:
-
+  lifeos_data:
 
 networks:
   evolution_network:
