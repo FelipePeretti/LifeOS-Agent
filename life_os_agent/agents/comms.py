@@ -51,6 +51,9 @@ Se o usuário perguntar algo que você não tem dados, responda educadamente exp
 def _log_comms_agent(callback_context):
     print("[AGENT] 📱 CommsAgent CHAMADO", flush=True)
 
+def _log_comms_agent(callback_context):
+    print("[AGENT] 📱 CommsAgent CHAMADO", flush=True)
+
 
 def build_comms_agent(model) -> LlmAgent:
     """Constrói o CommsAgent que envia mensagens via WhatsApp."""
