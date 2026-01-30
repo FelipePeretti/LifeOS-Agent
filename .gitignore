@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.*.example
 
 # Python
 /venv
@@ -19,3 +20,8 @@ dist/
 
 # ADK
 .adk/
+
+# Google Calendar MCP - Credenciais OAuth
+mcp-google-calendar/gcp-oauth.keys.json
+mcp-google-calendar/.credentials/
+*.keys.json

@@ -37,13 +37,14 @@ nano .env.evolution
 ### 3. Subir Evolution API (Docker)
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 Serviços iniciados:
 - **Evolution API**: http://localhost:8080
 - **PostgreSQL**: localhost:5432
 - **Redis**: localhost:6379
+- **MCP Google Calendar**: http://localhost:3001
 
 ### 4. Testar MCP Server (Inspector)
 
@@ -71,11 +72,12 @@ O banco será criado em `life_os_agent/database/lifeos.db`.
 ## 📁 Estrutura
 
 ```
-├── life_os_agent/     # Agentes Python (orchestrator, finance, comms)
-├── database/          # Módulo SQLite (setup, crud)
-├── mcp-evolution-api/ # MCP Server para Evolution API
-├── docs/              # Documentação
-└── docker-compose.yml # Stack completa
+├── life_os_agent/       # Agentes Python (orchestrator, finance, comms, calendar)
+├── database/            # Módulo SQLite (setup, crud)
+├── mcp-evolution-api/   # MCP Server para Evolution API (WhatsApp)
+├── mcp-google-calendar/ # MCP Server para Google Calendar
+├── docs/                # Documentação
+└── docker-compose.yml   # Stack completa
 ```
 
 ## 🔧 Variáveis de Ambiente
@@ -97,6 +99,7 @@ O banco será criado em `life_os_agent/database/lifeos.db`.
 | `LIFEOS_MODEL_NAME` | Modelo de IA a usar | `gemini-2.5-flash` |
 | `LIFEOS_MODEL_PATH` | Caminho do modelo ML | `life_os_agent/model/...` |
 | `LIFEOS_DEFAULT_CURRENCY` | Moeda padrão | `BRL` |
+| `GOOGLE_CALENDAR_MCP_URL` | URL do MCP Calendar | `http://mcp-google-calendar:3001` |
 
 ### `.env.evolution` - Evolution API
 
@@ -111,7 +114,7 @@ O banco será criado em `life_os_agent/database/lifeos.db`.
 
 > ⚠️ **Importante**: A `AUTHENTICATION_API_KEY` no `.env.evolution` deve ser igual à `EVOLUTION_API_KEY` no `.env`
 
-### `mcp-evolution-api/.env` - MCP Server
+### `mcp-evolution-api/.env` - MCP Server WhatsApp
 
 | Variável | Descrição | Exemplo |
 |----------|-----------|---------|
@@ -122,3 +125,14 @@ O banco será criado em `life_os_agent/database/lifeos.db`.
 | `WEBHOOK_ALLOWED_NUMBER` | Número permitido (DDI+DDD) | `5564999999999` |
 
 > 💡 **Nota**: O MCP Server usa `localhost:8080` porque roda **fora** do Docker (no host), diferente do LifeOS Agent que usa `evolution-api:8080` (rede Docker).
+
+### `.env.calendar` - MCP Google Calendar
+
+| Variável | Descrição | Exemplo |
+|----------|-----------|---------|
+| `TRANSPORT` | Modo de transporte | `http` |
+| `PORT` | Porta do servidor MCP | `3001` |
+| `HOST` | Host de escuta | `0.0.0.0` |
+| `GOOGLE_OAUTH_CREDENTIALS` | Caminho para credenciais OAuth | `/app/gcp-oauth.keys.json` |
+
+> 📅 **Setup do Calendar**: Veja a documentação completa em [docs/google-calendar-integration.md](docs/google-calendar-integration.md)
