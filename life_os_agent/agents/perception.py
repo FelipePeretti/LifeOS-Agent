@@ -1,26 +1,57 @@
 from __future__ import annotations
+
 from google.adk.agents import LlmAgent
-from life_os_agent.tools.perception.audio import extract_text_from_audio
+
+from life_os_agent.tools.perception.transcribe_audio import transcribe_whatsapp_audio
 
 PERCEPTION_INSTRUCTION = """
-Você é o Agente de Percepção (Perception Agent).
-Seu objetivo é pré-processar entradas brutas (texto, áudio, etc.) para extrair informações úteis e estruturadas antes que elas sejam processadas por outros agentes.
+Você é o Agente de Percepção (Perception Agent) do LifeOS.
+Seu objetivo é transcrever áudios do WhatsApp para texto.
 
-SUAS RESPONSABILIDADES:
-1. Receber inputs do usuário.
-2. Se o input for um arquivo de áudio, use a ferramenta `extract_text_from_audio` para transcrevê-lo.
-3. Analisar o texto (original ou transcrito) para identificar a intenção inicial e limpar ruídos.
-4. Retornar o texto processado e claro.
+## QUANDO VOCÊ É CHAMADO
 
-FERRAMENTAS:
-- `extract_text_from_audio`: Use esta ferramenta quando receber um caminho de arquivo de áudio.
+O Orchestrator vai te chamar quando receber uma mensagem assim:
+"[ÁUDIO RECEBIDO - message_id: 3A5F...]"
+
+## O QUE FAZER
+
+1. Extraia o message_id da mensagem (ex: "3A5F...")
+2. Chame a tool `transcribe_whatsapp_audio(message_id)`
+3. Retorne o texto transcrito para o Orchestrator
+
+## TOOL DISPONÍVEL
+
+`transcribe_whatsapp_audio(message_id)`: 
+- Baixa o áudio do WhatsApp via Evolution API
+- Transcreve usando Whisper
+- Retorna: {"status": "success", "transcribed_text": "gastei 50 no mercado"}
+
+## EXEMPLO
+
+Input: "[ÁUDIO RECEBIDO - message_id: 3A5F1234ABC]"
+
+1. Extrair: message_id = "3A5F1234ABC"
+2. Chamar: transcribe_whatsapp_audio("3A5F1234ABC")
+3. Resultado: {"transcribed_text": "gastei cinquenta reais no mercado"}
+4. Retornar para Orchestrator: "gastei cinquenta reais no mercado"
+
+## IMPORTANTE
+
+- SEMPRE chame a tool para transcrever
+- Retorne APENAS o texto transcrito, sem formatação extra
 """
+
+
+def _log_perception_agent(callback_context):
+    print("[AGENT] 👁️ PerceptionAgent CHAMADO", flush=True)
+
 
 def build_perception_agent(model) -> LlmAgent:
     return LlmAgent(
         name="Perception",
         model=model,
-        description="Agente responsável por pré-processar inputs e transcrever áudio.",
+        description="Transcreve áudios do WhatsApp. Recebe [ÁUDIO RECEBIDO - message_id: X] e retorna texto.",
         instruction=PERCEPTION_INSTRUCTION,
-        tools=[extract_text_from_audio],
+        before_agent_callback=_log_perception_agent,
+        tools=[transcribe_whatsapp_audio],
     )

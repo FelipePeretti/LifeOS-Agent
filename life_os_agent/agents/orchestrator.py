@@ -1,56 +1,107 @@
 from __future__ import annotations
 
 from google.adk.agents import LlmAgent
+from google.adk.tools import agent_tool
 
 from life_os_agent.agents.comms import build_comms_agent
 from life_os_agent.agents.database import build_database_agent
+from life_os_agent.agents.finance import build_finance_agent
+from life_os_agent.agents.perception import build_perception_agent
+from life_os_agent.agents.strategist import build_strategist_agent
+
+
+def _log_orchestrator(callback_context):
+    print("[AGENT] 🎯 Orchestrator CHAMADO", flush=True)
+
 
 ORCHESTRATOR_INSTRUCTION = """
-Você é o Orquestrador do LifeOS.
-Sua função é COORDENAR o fluxo. Você NÃO executa tools, apenas delega para os agentes.
+Você é o Orchestrator do LifeOS. Você coordena tarefas usando TOOLS.
 
-## AGENTES DISPONÍVEIS
-1. **DatabaseAgent**: Especialista em banco de dados
-   - Identifica usuários.
-   - Busca dados financeiros (saldo, gastos) e agenda.
-   - Registra transações.
+## COMO EXTRAIR O NÚMERO DO USUÁRIO
 
-2. **CommsAgent**: Especialista em comunicação
-   - Envia mensagens no WhatsApp (tem a tool `send_whatsapp_response`).
+A mensagem que você recebe tem este formato:
+```
+[CONTEXTO DO USUÁRIO]
+user_phone: 556496185377
+user_name: João
 
-## FLUXO DE EXECUÇÃO (Siga rigorosamente em ordem)
+[MENSAGEM DO USUÁRIO]
+Gastei 30 no mercado
+```
 
-1. **IDENTIFICAÇÃO (DatabaseAgent)**:
-   - Transfira para `DatabaseAgent` com a instrução: "Verifique/crie o usuário".
-   - Aguarde o retorno dos dados.
+EXTRAIA o user_phone (ex: 556496185377) e use-o em TODAS as chamadas.
 
-2. **RESOLUÇÃO (DatabaseAgent)**:
-   - Analise a intenção do usuário.
-   - **Finanças**: Se pedir saldo, gastos ou extrato, transfira para `DatabaseAgent` para buscar os dados.
-   - **Registro**: Se pedir para salvar algo, transfira para `DatabaseAgent` para executar a ação.
-   - **Conversa**: Se for apenas papo ou saudação, pule esta etapa.
+## TOOLS DISPONÍVEIS
 
-3. **RESPOSTA (CommsAgent)**:
-   - **OBRIGATÓRIO**: Transfira para `CommsAgent` para enviar a resposta final.
-   - Forneça ao CommsAgent todo o contexto: dados do usuário, resultado da busca no banco (se houver) e a mensagem original.
-   - Instrução: "Envie resposta para [NOME]. Contexto: [RESULTADO] ou Mensagem: [MENSAGEM_ORIGINAL]".
+1. **DatabaseAgent**: Verificar/criar usuário, salvar transações
+2. **FinanceAgent**: Classificar transações financeiras
+3. **StrategistAgent**: Consultas de orçamento e metas
+4. **CommsAgent**: Enviar resposta ao usuário (SEMPRE no final)
+5. **Perception**: Transcrever áudio para texto
 
-## REGRAS CRÍTICAS
-- **NUNCA** encerre o fluxo sem que o `CommsAgent` tenha sido chamado.
-- **NUNCA** responda diretamente ao usuário (você não tem a tool de envio).
-- Se o usuário perguntar sobre gastos, você **DEVE** consultar o `DatabaseAgent` antes de chamar o `CommsAgent`.
+## FLUXO PARA ÁUDIO (PRIORIDADE!)
+
+Se a mensagem contiver "[ÁUDIO RECEBIDO - message_id:", faça:
+
+1. **Perception**: Passar a mensagem completa para transcrever
+   → Recebe: texto transcrito (ex: "gastei 50 no mercado")
+2. Continuar com o fluxo normal usando o texto transcrito
+
+Exemplo:
+- Entrada: "[ÁUDIO RECEBIDO - message_id: 3A5F1234]"
+- Chamar: Perception("[ÁUDIO RECEBIDO - message_id: 3A5F1234]")
+- Resultado: "gastei cinquenta reais no mercado"
+- Continuar: FinanceAgent → DatabaseAgent → StrategistAgent → CommsAgent
+
+## FLUXO PARA TRANSAÇÕES (gastei, paguei, comprei, recebi)
+
+1. DatabaseAgent: "verificar usuário [user_phone]"
+2. FinanceAgent: "classificar: [texto]"
+3. DatabaseAgent: "salvar transação category=[X] amount=[Y]"
+4. StrategistAgent: "verificar meta para categoria [X]"
+5. CommsAgent: "phone=[user_phone], categoria=[X], valor=[Y], meta=[info]"
+
+## FLUXO PARA CONSULTAS
+
+1. DatabaseAgent: "verificar usuário"
+2. StrategistAgent: "consultar [pergunta]"
+3. CommsAgent: "responder com dados"
+
+## REGRA CRÍTICA
+
+- Se receber ÁUDIO, chame Perception PRIMEIRO
+- SEMPRE termine com CommsAgent
+- Use o phone REAL, nunca placeholders (ex: 556496185377, não [user_phone])
 """
 
 
 def build_orchestrator_agent(model) -> LlmAgent:
-    """Constrói o agente orquestrador do LifeOS."""
+    """Constrói o Orchestrator com tools explícitas para cada agente."""
+
     database_agent = build_database_agent(model)
+    finance_agent = build_finance_agent(model)
+    strategist_agent = build_strategist_agent(model)
+    perception_agent = build_perception_agent(model)
     comms_agent = build_comms_agent(model)
+
+    database_tool = agent_tool.AgentTool(agent=database_agent)
+    finance_tool = agent_tool.AgentTool(agent=finance_agent)
+    strategist_tool = agent_tool.AgentTool(agent=strategist_agent)
+    perception_tool = agent_tool.AgentTool(agent=perception_agent)
+    comms_tool = agent_tool.AgentTool(agent=comms_agent)
 
     return LlmAgent(
         name="Orchestrator",
         model=model,
-        description="Coordenador que APENAS delega tarefas para DatabaseAgent e CommsAgent. Nunca executa tools.",
+        description="Coordenador central do LifeOS. Usa tools para chamar agentes especializados.",
         instruction=ORCHESTRATOR_INSTRUCTION,
-        sub_agents=[database_agent, comms_agent],
+        before_agent_callback=_log_orchestrator,
+        tools=[
+            database_tool,
+            finance_tool,
+            strategist_tool,
+            perception_tool,
+            comms_tool,
+        ],
+        sub_agents=[],
     )
