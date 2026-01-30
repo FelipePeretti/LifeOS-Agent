@@ -45,6 +45,7 @@ WORKDIR /app
 # Esta layer é reconstruída mais vezes, mas é rápida
 # ============================================
 COPY life_os_agent/ ./life_os_agent/
+COPY init_db.py ./init_db.py
 
 # ============================================
 # LAYER 6: Scripts e configurações finais
