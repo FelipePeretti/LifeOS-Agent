@@ -60,7 +60,9 @@ def call_adk_agent(
 ) -> dict:
     """Chama o agente ADK via API REST."""
     if session_id is None:
-        session_id = f"session_{user_id}"
+        session_id = (
+            f"session_{user_id}_v1"  # Forçando sessão nova para teste de contexto
+        )
 
     if not ensure_session_exists(user_id, session_id):
         return {"status": "error", "error": "Failed to create/verify session"}
@@ -188,6 +190,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
                 phone = message_info["phone_number"]
                 name = message_info.get("push_name", "")
                 text = message_info["text"]
+                message_type = message_info.get("message_type", "text")
                 is_from_me = message_info.get("is_from_me", False)
 
                 if is_from_me:
@@ -203,17 +206,30 @@ class WebhookHandler(BaseHTTPRequestHandler):
                     PROCESSED_MESSAGE_IDS.append(msg_id)
 
                 # Processamento Assíncrono (Background)
-                def process_message_background(u_phone, u_name, u_text):
+                def process_message_background(
+                    u_phone, u_name, u_text, u_msg_type, u_msg_id
+                ):
                     # Garante que mensagens do mesmo usuário sejam processadas uma por vez
                     lock = get_user_lock(u_phone)
                     with lock:
+                        final_text = u_text
+
+                        # Se for áudio, passa o message_id para o agente transcrever
+                        if u_msg_type == "audio" and u_msg_id:
+                            print(
+                                f"[WEBHOOK] Áudio detectado, msg_id: {u_msg_id}",
+                                flush=True,
+                            )
+                            final_text = f"[ÁUDIO RECEBIDO - message_id: {u_msg_id}]"
+
                         set_current_user(u_phone, u_name)
                         call_adk_agent(
-                            user_id=u_phone, user_name=u_name, message=u_text
+                            user_id=u_phone, user_name=u_name, message=final_text
                         )
 
                 thread = threading.Thread(
-                    target=process_message_background, args=(phone, name, text)
+                    target=process_message_background,
+                    args=(phone, name, text, message_type, msg_id),
                 )
                 thread.start()
 
@@ -240,7 +256,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
 def main():
     server_address = ("0.0.0.0", WEBHOOK_PORT)
     httpd = HTTPServer(server_address, WebhookHandler)
-    log(f"[Webhook] Porta {WEBHOOK_PORT} | ADK: {ADK_API_URL}")
+    print(f"[Webhook] Porta {WEBHOOK_PORT} | ADK: {ADK_API_URL}")
 
     try:
         httpd.serve_forever()
