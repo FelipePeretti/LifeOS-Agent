@@ -107,6 +107,8 @@ def add_transaction(
     elif len(date) == 10:
         date = f"{date}T{datetime.now().strftime('%H:%M:%S')}"
 
+    create_user(user_id)
+
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -331,6 +333,9 @@ def add_calendar_log(
     google_event_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Registra um evento de calendário."""
+    # Garante que o usuário existe
+    create_user(user_id)
+
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
