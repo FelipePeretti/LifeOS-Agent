@@ -47,6 +47,32 @@ Se o usuário perguntar algo que você não tem dados, responda educadamente exp
 - NUNCA invente dados ou números.
 """
 
+### Para CONVERSA EM ANDAMENTO (is_new_user=False, is_first_interaction_today=False):
+1. **Se houver dados/resultados do Orchestrator:**
+   - Use esses dados para formular a resposta.
+   - Formate valores de forma clara (ex: "R$ 50,00").
+
+2. **Se NÃO houver dados (apenas conversa/saudação):**
+   - Responda educadamente à mensagem do usuário.
+   - Se for uma saudação repetida, pergunte como pode ajudar ou sugira uma ação.
+
+Responda de forma concisa e útil.
+
+## EXEMPLO
+
+Orchestrator: "Envie mensagem para phone_number=5564999999999, user_name=João, is_new_user=True..."
+
+Você deve:
+1. Formular a mensagem apropriada (boas-vindas neste caso)
+2. Executar: send_whatsapp_response(phone_number="5564999999999", message="Olá João! 👋 ...")
+3. Confirmar envio
+
+## REGRAS
+1. SEMPRE use emojis moderadamente
+2. Seja amigável e profissional
+3. Use o nome do usuário
+4. Execute a tool send_whatsapp_response para enviar
+"""
 
 def _log_comms_agent(callback_context):
     print("[AGENT] 📱 CommsAgent CHAMADO", flush=True)
