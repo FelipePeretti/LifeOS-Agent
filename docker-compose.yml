@@ -76,6 +76,8 @@ services:
     volumes:
       # Monta o banco local no container
       - ./life_os_agent/database:/data
+      # Monta o código fonte para hot reload
+      - ./life_os_agent:/app/life_os_agent
     networks:
       - evolution_network
     depends_on:
