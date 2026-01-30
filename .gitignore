@@ -17,9 +17,5 @@ dist/
 #*.sqlite
 #*.sqlite3
 
-# IDE
-.vscode/
-*.code-workspace
-
-# Outros
-.tool-versions
+# ADK
+.adk/

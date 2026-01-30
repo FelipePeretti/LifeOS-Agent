@@ -54,11 +54,19 @@ npx @modelcontextprotocol/inspector node dist/cli.js
 
 Abre o Inspector em http://localhost:5173 para testar as tools.
 
-### 5. Inicializar banco SQLite
+### 5. Inicializar banco de dados
+
+O banco SQLite não é commitado no repositório. Para criá-lo:
 
 ```bash
-python -c "from database.setup import init_database; init_database()"
+# Via script
+python init_db.py
+
+# Ou via Docker (se usando container)
+docker exec lifeos_agent python init_db.py
 ```
+
+O banco será criado em `life_os_agent/database/lifeos.db`.
 
 ## 📁 Estrutura
 
