@@ -1,5 +1,3 @@
-"""Webhook - Recebe mensagens do WhatsApp e repassa para o ADK."""
-
 import json
 import os
 import threading
@@ -15,10 +13,8 @@ ADK_API_URL = os.getenv("ADK_API_URL", "http://localhost:8000")
 WEBHOOK_PORT = int(os.getenv("WEBHOOK_PORT", "3002"))
 APP_NAME = "life_os_agent"
 
-# Cache para deduplicação de mensagens (armazena os últimos 1000 IDs)
 PROCESSED_MESSAGE_IDS = deque(maxlen=1000)
 
-# Locks por usuário para garantir processamento sequencial (Fila)
 USER_LOCKS = {}
 USER_LOCKS_MUTEX = threading.Lock()
 
@@ -31,7 +27,6 @@ def get_user_lock(user_id: str) -> threading.Lock:
 
 
 def ensure_session_exists(user_id: str, session_id: str) -> bool:
-    """Garante que a sessão ADK existe, criando se necessário."""
     url = f"{ADK_API_URL}/apps/{APP_NAME}/users/{user_id}/sessions/{session_id}"
     headers = {"Content-Type": "application/json"}
 
@@ -58,11 +53,8 @@ def ensure_session_exists(user_id: str, session_id: str) -> bool:
 def call_adk_agent(
     user_id: str, user_name: str, message: str, session_id: Optional[str] = None
 ) -> dict:
-    """Chama o agente ADK via API REST."""
     if session_id is None:
-        session_id = (
-            f"session_{user_id}_v1"  # Forçando sessão nova para teste de contexto
-        )
+        session_id = f"session_{user_id}_v1"
 
     if not ensure_session_exists(user_id, session_id):
         return {"status": "error", "error": "Failed to create/verify session"}
@@ -113,7 +105,6 @@ user_name: {user_name or "Desconhecido"}
 
 
 def extract_phone_number(data: dict, key: dict) -> str:
-    """Extrai o número de telefone, resolvendo LID se necessário."""
     remote_jid = key.get("remoteJid", "")
     remote_jid_alt = data.get("remoteJidAlt", "")
     sender_pn = data.get("senderPn", "")
@@ -131,7 +122,6 @@ def extract_phone_number(data: dict, key: dict) -> str:
 
 
 def extract_message_from_webhook(webhook_data: dict) -> Optional[dict]:
-    """Extrai informações relevantes do payload do webhook."""
     event = webhook_data.get("event", "").lower()
 
     if event not in ("messages.upsert", "messages_upsert"):
@@ -175,7 +165,7 @@ def extract_message_from_webhook(webhook_data: dict) -> Optional[dict]:
 
 class WebhookHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
-        pass  # Silencia logs padrão do servidor
+        pass
 
     def do_POST(self):
         try:
@@ -197,7 +187,6 @@ class WebhookHandler(BaseHTTPRequestHandler):
                     self._respond(200, {"ok": True, "direction": "outgoing"})
                     return
 
-                # Deduplicação: Se já processamos essa mensagem, ignora
                 if msg_id and msg_id in PROCESSED_MESSAGE_IDS:
                     self._respond(200, {"ok": True, "ignored": "duplicate"})
                     return
@@ -205,16 +194,13 @@ class WebhookHandler(BaseHTTPRequestHandler):
                 if msg_id:
                     PROCESSED_MESSAGE_IDS.append(msg_id)
 
-                # Processamento Assíncrono (Background)
                 def process_message_background(
                     u_phone, u_name, u_text, u_msg_type, u_msg_id
                 ):
-                    # Garante que mensagens do mesmo usuário sejam processadas uma por vez
                     lock = get_user_lock(u_phone)
                     with lock:
                         final_text = u_text
 
-                        # Se for áudio, passa o message_id para o agente transcrever
                         if u_msg_type == "audio" and u_msg_id:
                             print(
                                 f"[WEBHOOK] Áudio detectado, msg_id: {u_msg_id}",
@@ -233,7 +219,6 @@ class WebhookHandler(BaseHTTPRequestHandler):
                 )
                 thread.start()
 
-                # Responde IMEDIATAMENTE para a Evolution API não reenviar (evita loop de 5x)
                 self._respond(200, {"ok": True, "status": "processing_started"})
             else:
                 self._respond(200, {"ok": True, "ignored": True})

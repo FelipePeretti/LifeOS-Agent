@@ -2,9 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# ============================================
-# LAYER 1: Dependências do sistema (muda RARAMENTE)
-# ============================================
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     sqlite3 \
     ffmpeg \
@@ -12,22 +10,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# ============================================
-# LAYER 2: Dependências Python (muda POUCO)
-# Copiamos só o requirements.txt primeiro para usar cache
-# ============================================
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# ============================================
-# LAYER 3: Código Python (muda FREQUENTEMENTE)
-# ============================================
+
+COPY mcp-evolution-api/package.json mcp-evolution-api/package-lock.json* mcp-evolution-api/pnpm-lock.yaml* ./mcp-evolution-api/
+WORKDIR /app/mcp-evolution-api
+RUN npm install --legacy-peer-deps
+WORKDIR /app
+
+
+COPY mcp-evolution-api/tsconfig.json ./mcp-evolution-api/
+COPY mcp-evolution-api/src/ ./mcp-evolution-api/src/
+WORKDIR /app/mcp-evolution-api
+RUN npm run build
+WORKDIR /app
+
+
 COPY life_os_agent/ ./life_os_agent/
 COPY init_db.py ./init_db.py
 
-# ============================================
-# LAYER 4: Scripts e configurações finais
-# ============================================
+
 RUN mkdir -p /data
 
 COPY docker-entrypoint.sh /docker-entrypoint.sh

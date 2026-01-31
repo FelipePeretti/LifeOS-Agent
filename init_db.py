@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-"""Script para inicializar o banco de dados LifeOS."""
 
 import sys
 from pathlib import Path
 
-# Adiciona o diretório pai ao path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from life_os_agent.database.setup import DB_PATH, init_database

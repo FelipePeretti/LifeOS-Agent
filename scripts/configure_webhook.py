@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""
-Script para configurar o webhook da Evolution API.
-O webhook apontará para o Webhook Bridge do LifeOS Agent.
 
-O Webhook Bridge recebe os eventos da Evolution API e repassa para o ADK API Server.
-"""
 
 import json
 import os
@@ -14,9 +9,7 @@ import urllib.request
 from pathlib import Path
 
 
-# Carrega o .env automaticamente
 def load_env():
-    """Carrega variáveis do arquivo .env"""
     env_path = Path(__file__).parent.parent / ".env"
     if env_path.exists():
         with open(env_path) as f:
@@ -24,7 +17,6 @@ def load_env():
                 line = line.strip()
                 if line and not line.startswith("#") and "=" in line:
                     key, value = line.split("=", 1)
-                    # Remove aspas se existirem
                     value = value.strip().strip('"').strip("'")
                     os.environ.setdefault(key.strip(), value)
         print(f"✅ Carregado .env de: {env_path}")
@@ -38,13 +30,10 @@ EVOLUTION_API_URL = os.getenv("EVOLUTION_API_URL", "http://localhost:8080")
 EVOLUTION_API_KEY = os.getenv("EVOLUTION_API_KEY", "")
 EVOLUTION_INSTANCE = os.getenv("EVOLUTION_API_INSTANCE", "LifeOs")
 
-# URL do Webhook Bridge (dentro do container lifeos-agent, porta 3002)
-# Use localhost:3002 se estiver rodando localmente, ou lifeos-agent:3002 dentro do Docker
 WEBHOOK_BRIDGE_URL = os.getenv("WEBHOOK_BRIDGE_URL", "http://localhost:3002")
 
 
 def make_request(url: str, method: str = "GET", data: dict = None) -> dict:
-    """Faz requisição HTTP"""
     headers = {"Content-Type": "application/json", "apikey": EVOLUTION_API_KEY}
 
     req_data = json.dumps(data).encode("utf-8") if data else None
@@ -63,7 +52,6 @@ def make_request(url: str, method: str = "GET", data: dict = None) -> dict:
 
 
 def check_connection():
-    """Verifica o status da conexão da instância"""
     url = f"{EVOLUTION_API_URL}/instance/connectionState/{EVOLUTION_INSTANCE}"
     result = make_request(url)
     state = result.get("state", result.get("instance", {}).get("state", "unknown"))
@@ -72,7 +60,6 @@ def check_connection():
 
 
 def get_webhook_config():
-    """Obtém a configuração atual do webhook"""
     url = f"{EVOLUTION_API_URL}/webhook/find/{EVOLUTION_INSTANCE}"
     result = make_request(url)
 
@@ -85,10 +72,8 @@ def get_webhook_config():
 
 
 def configure_webhook():
-    """Configura o webhook da Evolution API v2"""
     url = f"{EVOLUTION_API_URL}/webhook/set/{EVOLUTION_INSTANCE}"
 
-    # Formato correto para Evolution API v2
     payload = {
         "webhook": {
             "enabled": True,
@@ -127,18 +112,15 @@ if __name__ == "__main__":
         print("   Configure a variável de ambiente antes de executar.")
         sys.exit(1)
 
-    # 1. Verifica conexão
     print("\n1️⃣ Verificando conexão...")
     state = check_connection()
     if state != "open":
         print(f"⚠️  Instância não está conectada (state={state})")
         print("   Conecte o WhatsApp via QR Code primeiro.")
 
-    # 2. Mostra config atual
     print("\n2️⃣ Configuração atual...")
     get_webhook_config()
 
-    # 3. Configura webhook
     print("\n3️⃣ Configurando webhook...")
     if configure_webhook():
         print("\n✅ Pronto! O webhook está configurado.")

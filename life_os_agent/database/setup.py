@@ -27,7 +27,6 @@ def init_database():
     with get_connection() as conn:
         cursor = conn.cursor()
 
-        # ===== USERS =====
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 whatsapp_number TEXT PRIMARY KEY,
@@ -37,15 +36,13 @@ def init_database():
             )
         """)
 
-        # Adiciona coluna last_interaction se não existir (para bancos existentes)
         try:
             cursor.execute(
                 "ALTER TABLE users ADD COLUMN last_interaction TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
             )
         except sqlite3.OperationalError:
-            pass  # Coluna já existe
+            pass
 
-        # ===== TRANSACTIONS =====
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS transactions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,7 +65,6 @@ def init_database():
             "CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category);"
         )
 
-        # ===== BUDGET_GOALS =====
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS budget_goals (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,7 +79,6 @@ def init_database():
             "CREATE INDEX IF NOT EXISTS idx_budget_goals_user ON budget_goals(user_id);"
         )
 
-        # ===== CALENDAR_EVENTS (log de eventos do LifeOS) =====
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS calendar_events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -1,5 +1,3 @@
-"""Tools de comunicação via WhatsApp (Evolution API)."""
-
 import json
 import os
 import urllib.error
@@ -12,7 +10,6 @@ EVOLUTION_INSTANCE = os.getenv("EVOLUTION_API_INSTANCE", "LifeOs")
 
 
 def send_whatsapp_message(phone_number: str, message: str) -> Dict[str, Any]:
-    """Envia uma mensagem de texto via WhatsApp."""
     if not phone_number or not message:
         return {"status": "error", "error": "phone_number e message são obrigatórios"}
 
@@ -45,7 +42,6 @@ def send_whatsapp_message(phone_number: str, message: str) -> Dict[str, Any]:
 
 
 def check_whatsapp_connection() -> Dict[str, Any]:
-    """Verifica o status da conexão do WhatsApp."""
     if not EVOLUTION_API_KEY:
         return {"status": "error", "error": "EVOLUTION_API_KEY não configurada"}
 
