@@ -80,21 +80,21 @@ def init_database():
         )
 
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS calendar_logs (
+            CREATE TABLE IF NOT EXISTS calendar_events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id TEXT NOT NULL,
+                google_event_id TEXT NOT NULL,
+                action TEXT CHECK(action IN ('created', 'updated', 'deleted')) NOT NULL,
                 event_summary TEXT,
-                event_date TEXT,
-                google_event_id TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(whatsapp_number)
             )
         """)
         cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_calendar_logs_user ON calendar_logs(user_id);"
+            "CREATE INDEX IF NOT EXISTS idx_calendar_events_user ON calendar_events(user_id);"
         )
         cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_calendar_logs_date ON calendar_logs(event_date);"
+            "CREATE INDEX IF NOT EXISTS idx_calendar_events_google_id ON calendar_events(google_event_id);"
         )
 
     return {"status": "ok", "path": DB_PATH}

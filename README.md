@@ -16,9 +16,6 @@ mise install
 
 # Instalar dependências Python
 pip install -r requirements.txt
-
-# Instalar dependências do MCP Server
-cd mcp-evolution-api && pnpm install && cd ..
 ```
 
 ### 2. Configurar ambiente
@@ -27,34 +24,27 @@ cd mcp-evolution-api && pnpm install && cd ..
 # Copiar templates
 cp .env.example .env
 cp .env.evolution.example .env.evolution
-cp mcp-evolution-api/.env.example mcp-evolution-api/.env
+cp .env.calendar.example .env.calendar
 
 # Editar com suas chaves
 nano .env
 nano .env.evolution
 ```
 
-### 3. Subir Evolution API (Docker)
+### 3. Subir Stack (Docker)
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 Serviços iniciados:
-- **Evolution API**: http://localhost:8080
+- **Evolution API**: http://localhost:8080 (WhatsApp)
 - **PostgreSQL**: localhost:5432
 - **Redis**: localhost:6379
+- **MCP Google Calendar**: http://localhost:3001
+- **LifeOS Agent**: http://localhost:8000
 
-### 4. Testar MCP Server (Inspector)
-
-```bash
-cd mcp-evolution-api
-npx @modelcontextprotocol/inspector node dist/cli.js
-```
-
-Abre o Inspector em http://localhost:5173 para testar as tools.
-
-### 5. Inicializar banco de dados
+### 4. Inicializar banco de dados
 
 O banco SQLite não é commitado no repositório. Para criá-lo:
 
@@ -71,11 +61,11 @@ O banco será criado em `life_os_agent/database/lifeos.db`.
 ## 📁 Estrutura
 
 ```
-├── life_os_agent/     # Agentes Python (orchestrator, finance, comms)
-├── database/          # Módulo SQLite (setup, crud)
-├── mcp-evolution-api/ # MCP Server para Evolution API
-├── docs/              # Documentação
-└── docker-compose.yml # Stack completa
+├── life_os_agent/       # Agentes Python (orchestrator, finance, comms, calendar)
+├── database/            # Módulo SQLite (setup, crud)
+├── mcp-google-calendar/ # MCP Server para Google Calendar
+├── docs/                # Documentação
+└── docker-compose.yml   # Stack completa
 ```
 
 ## 🔧 Variáveis de Ambiente
@@ -87,7 +77,7 @@ O banco será criado em `life_os_agent/database/lifeos.db`.
 | `EVOLUTION_API_URL` | URL da Evolution API | `http://evolution-api:8080` |
 | `EVOLUTION_API_KEY` | Chave de autenticação da API | `B6D711FC...` |
 | `EVOLUTION_API_INSTANCE` | Nome da instância WhatsApp | `LifeOs` |
-| `WEBHOOK_PORT` | Porta do webhook listener | `3001` |
+| `WEBHOOK_PORT` | Porta do webhook listener | `3002` |
 | `WEBHOOK_ALLOWED_NUMBER` | Número permitido (com DDI+DDD) | `5564999999999` |
 | `POSTGRES_DB` | Nome do banco PostgreSQL | `evolution` |
 | `POSTGRES_USER` | Usuário PostgreSQL | `evolution` |
@@ -97,6 +87,7 @@ O banco será criado em `life_os_agent/database/lifeos.db`.
 | `LIFEOS_MODEL_NAME` | Modelo de IA a usar | `gemini-2.5-flash` |
 | `LIFEOS_MODEL_PATH` | Caminho do modelo ML | `life_os_agent/model/...` |
 | `LIFEOS_DEFAULT_CURRENCY` | Moeda padrão | `BRL` |
+| `GOOGLE_CALENDAR_MCP_URL` | URL do MCP Calendar | `http://mcp-google-calendar:3001` |
 
 ### `.env.evolution` - Evolution API
 
@@ -111,14 +102,13 @@ O banco será criado em `life_os_agent/database/lifeos.db`.
 
 > ⚠️ **Importante**: A `AUTHENTICATION_API_KEY` no `.env.evolution` deve ser igual à `EVOLUTION_API_KEY` no `.env`
 
-### `mcp-evolution-api/.env` - MCP Server
+### `.env.calendar` - MCP Google Calendar
 
 | Variável | Descrição | Exemplo |
 |----------|-----------|---------|
-| `EVOLUTION_API_URL` | URL da API (**localhost**, roda fora do Docker) | `http://localhost:8080` |
-| `EVOLUTION_API_KEY` | Mesma chave dos outros `.env` | `B6D711FC...` |
-| `EVOLUTION_API_INSTANCE` | Nome da instância | `LifeOs` |
-| `WEBHOOK_PORT` | Porta para receber webhooks | `3001` |
-| `WEBHOOK_ALLOWED_NUMBER` | Número permitido (DDI+DDD) | `5564999999999` |
+| `TRANSPORT` | Modo de transporte | `http` |
+| `PORT` | Porta do servidor MCP | `3001` |
+| `HOST` | Host de escuta | `0.0.0.0` |
+| `GOOGLE_OAUTH_CREDENTIALS` | Caminho para credenciais OAuth | `/app/gcp-oauth.keys.json` |
 
-> 💡 **Nota**: O MCP Server usa `localhost:8080` porque roda **fora** do Docker (no host), diferente do LifeOS Agent que usa `evolution-api:8080` (rede Docker).
+> 📅 **Setup do Calendar**: Veja a documentação completa em [docs/google-calendar-integration.md](docs/google-calendar-integration.md)

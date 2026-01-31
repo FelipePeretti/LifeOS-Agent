@@ -3,6 +3,7 @@ from __future__ import annotations
 from google.adk.agents import LlmAgent
 from google.adk.tools import agent_tool
 
+from life_os_agent.agents.calendar import build_calendar_agent
 from life_os_agent.agents.comms import build_comms_agent
 from life_os_agent.agents.database import build_database_agent
 from life_os_agent.agents.finance import build_finance_agent
@@ -52,7 +53,8 @@ Este é o fluxo mais complexo. Precisamos salvar E verificar o impacto no orçam
    *(Retorna: Status OK)*
 4. **StrategistAgent**: "verificar status do orçamento para [PHONE]"
    *(Retorna: JSON com budget_status, metas, etc)*
-5. **CommsAgent**: ENVIE OS FATOS!
+5. **CalendarAgent**: Gerencia agenda do Google Calendar (eventos, compromissos)
+6. **CommsAgent**: ENVIE OS FATOS!
    Input: "Transação de [AMOUNT] em [CATEGORY] salva. Status do orçamento: [RESUMO DO STRATEGIST]."
    *(O CommsAgent vai decidir usar o template de confirmação)*
 
@@ -60,6 +62,21 @@ Este é o fluxo mais complexo. Precisamos salvar E verificar o impacto no orçam
 1. **DatabaseAgent**: "verificar usuário [PHONE], nome: [NAME]"
 2. **StrategistAgent** (Se for consulta): "consultar saldo/metas para [PHONE]"
 3. **CommsAgent**: "O usuário disse '[TEXTO]'. Dados do sistema: [DADOS DO DATABASE/STRATEGIST]."
+
+## FLUXO PARA AGENDA/CALENDÁRIO (reunião, compromisso, evento, agenda)
+
+Palavras-chave: reunião, evento, compromisso, agenda, marcar, agendar, calendário
+
+1. DatabaseAgent("verificar usuário 556496185377, nome: Felipe")
+2. CalendarAgent("phone: 556496185377, ação: [listar eventos | criar evento | etc]")
+3. CommsAgent("enviar resultado da agenda para 556496185377")
+
+### Exemplos de uso do CalendarAgent:
+- "meus compromissos" → CalendarAgent listar próximos eventos
+- "marca reunião amanhã às 14h" → CalendarAgent criar evento
+- "tenho algo terça?" → CalendarAgent listar eventos de terça
+
+IMPORTANTE: Se CalendarAgent retornar `auth_required`, envie a URL de autenticação via CommsAgent.
 
 ## EXEMPLO DE COMANDO PARA COMMS (Crucial!)
 NÃO DIGA: "Comms, diga olá".
@@ -69,6 +86,8 @@ NÃO DIGA: "Comms, diga que gastou 30".
 DIGA: "Comms, transação de 30 reais em Mercado salva com sucesso. Orçamento: 50% atingido."
 
 (Deixe o CommsAgent escolher o template bonito).
+
+- Para agenda: passe o phone para CalendarAgent e processe o retorno
 """
 
 
@@ -78,12 +97,14 @@ def build_orchestrator_agent(model) -> LlmAgent:
     strategist_agent = build_strategist_agent(model)
     perception_agent = build_perception_agent(model)
     comms_agent = build_comms_agent(model)
+    calendar_agent = build_calendar_agent(model)
 
     database_tool = agent_tool.AgentTool(agent=database_agent)
     finance_tool = agent_tool.AgentTool(agent=finance_agent)
     strategist_tool = agent_tool.AgentTool(agent=strategist_agent)
     perception_tool = agent_tool.AgentTool(agent=perception_agent)
     comms_tool = agent_tool.AgentTool(agent=comms_agent)
+    calendar_tool = agent_tool.AgentTool(agent=calendar_agent)
 
     return LlmAgent(
         name="Orchestrator",
@@ -97,6 +118,7 @@ def build_orchestrator_agent(model) -> LlmAgent:
             strategist_tool,
             perception_tool,
             comms_tool,
+            calendar_tool,
         ],
         sub_agents=[],
     )

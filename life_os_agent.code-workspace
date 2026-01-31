@@ -5,8 +5,8 @@
       "path": "./life_os_agent"
     },
     {
-      "name": "MCPEvolutionApi",
-      "path": "./mcp-evolution-api"
+      "name": "MCPCalendar",
+      "path": "./mcp-google-calendar"
     },
     {
       "name": "Docs",

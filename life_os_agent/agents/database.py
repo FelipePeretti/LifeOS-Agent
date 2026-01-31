@@ -9,7 +9,8 @@ from life_os_agent.database.crud import (
     delete_transaction,
     get_balance,
     get_budget_status,
-    get_calendar_logs,
+    get_calendar_events,
+    get_event_by_google_id,
     get_expenses_by_category,
     get_transactions,
     set_budget_goal,
@@ -44,8 +45,9 @@ Sua responsabilidade é executar operações no banco de dados SQLite.
   - percentage: percentual já gasto
 
 ### Agenda
-- `add_calendar_log`: Adiciona evento.
-- `get_calendar_logs`: Busca eventos.
+- `add_calendar_log(user_id, google_event_id, action, event_summary)`: Registra ação de calendário.
+- `get_calendar_events(user_id, limit, action)`: Busca logs de eventos.
+- `get_event_by_google_id(user_id, google_event_id)`: Busca evento por ID do Google.
 
 ## COMO AGIR
 1. Receba a instrução do Orchestrator/StrategistAgent.
@@ -88,7 +90,8 @@ def build_database_agent(model) -> LlmAgent:
             get_budget_status,
             # Tools de calendário
             add_calendar_log,
-            get_calendar_logs,
+            get_calendar_events,
+            get_event_by_google_id,
             # Inicialização
             init_database,
         ],
