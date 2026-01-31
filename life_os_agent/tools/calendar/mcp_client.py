@@ -1,14 +1,15 @@
 """
-Cliente HTTP para comunicação com o MCP Google Calendar.
+Cliente para comunicação com o MCP Google Calendar.
 
 Este módulo fornece funções para comunicar com o servidor MCP do Google Calendar
-via HTTP, seguindo o protocolo JSON-RPC 2.0.
+usando requisições HTTP diretas com o protocolo MCP (JSON-RPC sobre HTTP).
 """
 
+import json
 import os
 from typing import Any, Dict, List, Optional
 
-import requests
+import httpx
 
 # URL do MCP Google Calendar (configurável via variável de ambiente)
 MCP_CALENDAR_URL = os.getenv("GOOGLE_CALENDAR_MCP_URL", "http://localhost:3001")
@@ -19,6 +20,7 @@ class CalendarMCPClient:
 
     def __init__(self, base_url: str = None):
         self.base_url = base_url or MCP_CALENDAR_URL
+        self._client = httpx.Client(timeout=30)
         self._request_id = 0
 
     def _get_request_id(self) -> int:
@@ -26,61 +28,85 @@ class CalendarMCPClient:
         self._request_id += 1
         return self._request_id
 
-    def _make_request(
-        self, method: str, params: Optional[Dict[str, Any]] = None
+    def _make_rest_request(
+        self, method: str, endpoint: str, json_data: Optional[Dict] = None
+    ) -> Dict[str, Any]:
+        """Faz uma requisição REST para APIs de gerenciamento."""
+        url = f"{self.base_url}{endpoint}"
+        try:
+            if method == "GET":
+                response = self._client.get(url)
+            elif method == "POST":
+                response = self._client.post(url, json=json_data or {})
+            elif method == "DELETE":
+                response = self._client.delete(url)
+            else:
+                return {"error": f"Método não suportado: {method}"}
+
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            return {"error": f"HTTP {e.response.status_code}: {e.response.text}"}
+        except Exception as e:
+            return {"error": f"Erro ao conectar com o MCP Calendar: {str(e)}"}
+
+    def _make_mcp_request(
+        self, mcp_method: str, params: Optional[Dict] = None
     ) -> Dict[str, Any]:
         """
-        Faz uma requisição JSON-RPC para o MCP.
+        Faz uma requisição MCP (JSON-RPC sobre HTTP com SSE).
 
         Args:
-            method: Nome do método MCP (ex: 'tools/call')
-            params: Parâmetros da requisição
+            mcp_method: Método MCP (ex: 'tools/call', 'tools/list')
+            params: Parâmetros do método
 
         Returns:
-            Resposta do MCP
-
-        Raises:
-            Exception: Se a requisição falhar
+            Resultado da requisição ou erro
         """
+        url = f"{self.base_url}/mcp"
         payload = {
             "jsonrpc": "2.0",
             "id": self._get_request_id(),
-            "method": method,
+            "method": mcp_method,
             "params": params or {},
         }
 
         try:
-            response = requests.post(
-                self.base_url,
+            response = self._client.post(
+                url,
                 json=payload,
                 headers={
                     "Content-Type": "application/json",
                     "Accept": "application/json, text/event-stream",
                 },
-                timeout=30,
             )
             response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            return {"error": f"Erro ao conectar com o MCP Calendar: {str(e)}"}
+
+            # Resposta pode ser SSE, precisamos parsear
+            text = response.text
+            if text.startswith("event:"):
+                # Parse SSE response
+                for line in text.split("\n"):
+                    if line.startswith("data:"):
+                        data = line[5:].strip()
+                        return json.loads(data)
+            else:
+                return response.json()
+
+        except httpx.HTTPStatusError as e:
+            return {"error": f"HTTP {e.response.status_code}: {e.response.text}"}
+        except Exception as e:
+            return {"error": f"Erro na requisição MCP: {str(e)}"}
 
     def health_check(self) -> Dict[str, Any]:
         """Verifica se o MCP está saudável."""
-        try:
-            response = requests.get(f"{self.base_url}/health", timeout=10)
-            return response.json()
-        except Exception as e:
-            return {"status": "unhealthy", "error": str(e)}
+        return self._make_rest_request("GET", "/health")
 
-    # ==================== API de Contas ====================
+    # ==================== API de Contas (REST) ====================
 
     def list_accounts(self) -> Dict[str, Any]:
         """Lista todas as contas autenticadas no MCP."""
-        try:
-            response = requests.get(f"{self.base_url}/api/accounts", timeout=10)
-            return response.json()
-        except Exception as e:
-            return {"error": str(e), "accounts": []}
+        return self._make_rest_request("GET", "/api/accounts")
 
     def get_account(self, account_id: str) -> Optional[Dict[str, Any]]:
         """Busca uma conta específica pelo ID."""
@@ -92,8 +118,9 @@ class CalendarMCPClient:
         return None
 
     def account_exists(self, account_id: str) -> bool:
-        """Verifica se uma conta existe."""
-        return self.get_account(account_id) is not None
+        """Verifica se uma conta existe e está ativa."""
+        account = self.get_account(account_id)
+        return account is not None and account.get("status") == "active"
 
     def create_auth_url(self, account_id: str) -> Dict[str, Any]:
         """
@@ -105,235 +132,165 @@ class CalendarMCPClient:
         Returns:
             Dict com 'authUrl' e 'accountId' ou 'error'
         """
-        try:
-            response = requests.post(
-                f"{self.base_url}/api/accounts",
-                json={"accountId": account_id},
-                headers={"Content-Type": "application/json"},
-                timeout=10,
-            )
-            return response.json()
-        except Exception as e:
-            return {"error": str(e)}
+        return self._make_rest_request(
+            "POST", "/api/accounts", {"accountId": account_id}
+        )
 
     def remove_account(self, account_id: str) -> Dict[str, Any]:
         """Remove uma conta autenticada."""
-        try:
-            response = requests.delete(
-                f"{self.base_url}/api/accounts/{account_id}", timeout=10
-            )
-            return response.json()
-        except Exception as e:
-            return {"error": str(e)}
+        return self._make_rest_request("DELETE", f"/api/accounts/{account_id}")
 
-    # ==================== Tools do Calendar ====================
+    def reauth_account(self, account_id: str) -> Dict[str, Any]:
+        """Gera nova URL de autenticação para uma conta existente."""
+        return self._make_rest_request("POST", f"/api/accounts/{account_id}/reauth")
 
-    def call_tool(
-        self,
-        tool_name: str,
-        arguments: Dict[str, Any],
-        account_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    # ==================== Tools MCP ====================
+
+    def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """
         Chama uma tool do MCP Calendar.
 
         Args:
             tool_name: Nome da tool (ex: 'list-events', 'create-event')
             arguments: Argumentos da tool
-            account_id: ID da conta a usar (opcional, usa default se não informado)
 
         Returns:
             Resultado da tool ou erro
         """
-        if account_id:
-            arguments["account"] = account_id
-
-        result = self._make_request(
-            "tools/call", {"name": tool_name, "arguments": arguments}
+        result = self._make_mcp_request(
+            "tools/call",
+            {"name": tool_name, "arguments": arguments},
         )
 
         if "error" in result:
             return result
 
-        # Extrai o resultado da resposta MCP
-        return result.get("result", result)
+        # Extrair resultado da resposta MCP
+        if "result" in result:
+            mcp_result = result["result"]
+            # O resultado pode ter 'content' com a resposta
+            if "content" in mcp_result:
+                content = mcp_result["content"]
+                # Content pode ser uma lista de partes
+                if isinstance(content, list) and content:
+                    # Pegar o texto da primeira parte
+                    text_content = content[0].get("text", "")
+                    try:
+                        return json.loads(text_content)
+                    except json.JSONDecodeError:
+                        return {"content": text_content}
+                return {"content": content}
+            return mcp_result
 
-    def list_calendars(self, account_id: Optional[str] = None) -> Dict[str, Any]:
-        """Lista todos os calendários disponíveis."""
-        return self.call_tool("list-calendars", {}, account_id)
+        return result
+
+    def list_tools(self) -> Dict[str, Any]:
+        """Lista todas as tools disponíveis no MCP."""
+        return self._make_mcp_request("tools/list")
+
+    # ==================== Métodos de Conveniência ====================
 
     def list_events(
         self,
+        account_id: str,
         calendar_id: str = "primary",
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None,
         max_results: int = 10,
-        account_id: Optional[str] = None,
+        time_min: Optional[str] = None,
+        time_max: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Lista eventos de um calendário.
 
         Args:
+            account_id: ID da conta no MCP
             calendar_id: ID do calendário (default: 'primary')
-            start_date: Data inicial (ISO 8601)
-            end_date: Data final (ISO 8601)
             max_results: Número máximo de resultados
-            account_id: ID da conta
+            time_min: Data/hora mínima (ISO 8601)
+            time_max: Data/hora máxima (ISO 8601)
         """
         args = {
+            "account": account_id,
             "calendarId": calendar_id,
             "maxResults": max_results,
         }
-        if start_date:
-            args["timeMin"] = start_date
-        if end_date:
-            args["timeMax"] = end_date
+        if time_min:
+            args["timeMin"] = time_min
+        if time_max:
+            args["timeMax"] = time_max
 
-        return self.call_tool("list-events", args, account_id)
+        return self.call_tool("list-events", args)
 
     def create_event(
         self,
+        account_id: str,
         summary: str,
-        start_time: str,
-        end_time: str,
+        start: str,
+        end: str,
+        calendar_id: str = "primary",
         description: Optional[str] = None,
         location: Optional[str] = None,
-        calendar_id: str = "primary",
-        account_id: Optional[str] = None,
+        all_day: bool = False,
     ) -> Dict[str, Any]:
         """
         Cria um novo evento no calendário.
 
         Args:
+            account_id: ID da conta no MCP
             summary: Título do evento
-            start_time: Horário de início (ISO 8601)
-            end_time: Horário de término (ISO 8601)
-            description: Descrição do evento (opcional)
-            location: Local do evento (opcional)
+            start: Data/hora de início (ISO 8601) ou apenas data para all-day (YYYY-MM-DD)
+            end: Data/hora de término (ISO 8601) ou apenas data para all-day (YYYY-MM-DD)
             calendar_id: ID do calendário (default: 'primary')
-            account_id: ID da conta
+            description: Descrição do evento
+            location: Local do evento
+            all_day: Se True, cria evento de dia inteiro (start/end devem ser só data)
+        
+        Notas:
+            - Para eventos de dia inteiro, use start e end no formato YYYY-MM-DD
+            - O MCP detecta automaticamente eventos all-day quando start não contém 'T'
         """
         args = {
+            "account": account_id,
             "calendarId": calendar_id,
             "summary": summary,
-            "start": start_time,
-            "end": end_time,
+            "start": start,
+            "end": end,
         }
         if description:
             args["description"] = description
         if location:
             args["location"] = location
 
-        return self.call_tool("create-event", args, account_id)
-
-    def update_event(
-        self,
-        event_id: str,
-        summary: Optional[str] = None,
-        start_time: Optional[str] = None,
-        end_time: Optional[str] = None,
-        description: Optional[str] = None,
-        location: Optional[str] = None,
-        calendar_id: str = "primary",
-        account_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """
-        Atualiza um evento existente.
-
-        Args:
-            event_id: ID do evento a atualizar
-            summary: Novo título (opcional)
-            start_time: Novo horário de início (opcional)
-            end_time: Novo horário de término (opcional)
-            description: Nova descrição (opcional)
-            location: Novo local (opcional)
-            calendar_id: ID do calendário
-            account_id: ID da conta
-        """
-        args = {
-            "calendarId": calendar_id,
-            "eventId": event_id,
-        }
-        if summary:
-            args["summary"] = summary
-        if start_time:
-            args["start"] = start_time
-        if end_time:
-            args["end"] = end_time
-        if description:
-            args["description"] = description
-        if location:
-            args["location"] = location
-
-        return self.call_tool("update-event", args, account_id)
+        return self.call_tool("create-event", args)
 
     def delete_event(
         self,
+        account_id: str,
         event_id: str,
         calendar_id: str = "primary",
-        account_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """
-        Remove um evento do calendário.
+        """Remove um evento do calendário."""
+        return self.call_tool(
+            "delete-event",
+            {
+                "account": account_id,
+                "calendarId": calendar_id,
+                "eventId": event_id,
+            },
+        )
 
-        Args:
-            event_id: ID do evento a remover
-            calendar_id: ID do calendário
-            account_id: ID da conta
-        """
-        args = {
-            "calendarId": calendar_id,
-            "eventId": event_id,
-        }
-        return self.call_tool("delete-event", args, account_id)
+    def get_current_time(self, account_id: Optional[str] = None) -> Dict[str, Any]:
+        """Obtém a data/hora atual do servidor."""
+        args = {}
+        if account_id:
+            args["account"] = account_id
+        return self.call_tool("get-current-time", args)
 
-    def search_events(
-        self,
-        query: str,
-        calendar_id: str = "primary",
-        max_results: int = 10,
-        account_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """
-        Busca eventos por texto.
-
-        Args:
-            query: Texto a buscar
-            calendar_id: ID do calendário
-            max_results: Número máximo de resultados
-            account_id: ID da conta
-        """
-        args = {
-            "calendarId": calendar_id,
-            "query": query,
-            "maxResults": max_results,
-        }
-        return self.call_tool("search-events", args, account_id)
-
-    def get_freebusy(
-        self,
-        start_time: str,
-        end_time: str,
-        calendar_ids: Optional[List[str]] = None,
-        account_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """
-        Verifica disponibilidade em um período.
-
-        Args:
-            start_time: Início do período (ISO 8601)
-            end_time: Fim do período (ISO 8601)
-            calendar_ids: Lista de calendários a verificar
-            account_id: ID da conta
-        """
-        args = {
-            "timeMin": start_time,
-            "timeMax": end_time,
-        }
-        if calendar_ids:
-            args["calendars"] = calendar_ids
-
-        return self.call_tool("get-freebusy", args, account_id)
+    def get_calendars_for_account(self, account_id: str) -> List[Dict[str, Any]]:
+        """Retorna a lista de calendários de uma conta."""
+        account = self.get_account(account_id)
+        if account:
+            return account.get("calendars", [])
+        return []
 
 
 # Instância global do cliente

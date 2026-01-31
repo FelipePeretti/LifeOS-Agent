@@ -328,42 +328,56 @@ def delete_budget_goal(user_id: str, category: str) -> Dict[str, Any]:
 
 def add_calendar_log(
     user_id: str,
-    event_summary: str,
-    event_date: str,
-    google_event_id: Optional[str] = None,
+    google_event_id: str,
+    action: str,
+    event_summary: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Registra um evento de calendário."""
+    """
+    Registra uma ação de calendário (created, updated, deleted).
+
+    Args:
+        user_id: WhatsApp number do usuário
+        google_event_id: ID do evento no Google Calendar
+        action: Tipo de ação ('created', 'updated', 'deleted')
+        event_summary: Título do evento (opcional, para referência)
+    """
+    if action not in ("created", "updated", "deleted"):
+        return {"status": "error", "error": f"Ação inválida: {action}"}
+
     # Garante que o usuário existe
     create_user(user_id)
 
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            """INSERT INTO calendar_logs (user_id, event_summary, event_date, google_event_id)
+            """INSERT INTO calendar_events (user_id, google_event_id, action, event_summary)
                VALUES (?, ?, ?, ?)""",
-            (user_id, event_summary, event_date, google_event_id),
+            (user_id, google_event_id, action, event_summary),
         )
         return {"status": "ok", "id": cursor.lastrowid}
 
 
-def get_calendar_logs(
+def get_calendar_events(
     user_id: str,
     limit: int = 50,
-    start_date: Optional[str] = None,
-    end_date: Optional[str] = None,
+    action: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """Retorna logs de eventos de calendário."""
-    query = "SELECT * FROM calendar_logs WHERE user_id = ?"
+    """
+    Retorna log de eventos de calendário do usuário.
+
+    Args:
+        user_id: WhatsApp number do usuário
+        limit: Número máximo de resultados
+        action: Filtrar por tipo de ação (opcional)
+    """
+    query = "SELECT * FROM calendar_events WHERE user_id = ?"
     params: List[Any] = [user_id]
 
-    if start_date:
-        query += " AND event_date >= ?"
-        params.append(start_date)
-    if end_date:
-        query += " AND event_date <= ?"
-        params.append(end_date)
+    if action:
+        query += " AND action = ?"
+        params.append(action)
 
-    query += " ORDER BY event_date DESC LIMIT ?"
+    query += " ORDER BY created_at DESC LIMIT ?"
     params.append(limit)
 
     with get_connection() as conn:
@@ -372,11 +386,35 @@ def get_calendar_logs(
         return [dict(row) for row in cursor.fetchall()]
 
 
-def delete_calendar_log(log_id: int, user_id: str) -> Dict[str, Any]:
+def get_event_by_google_id(
+    user_id: str,
+    google_event_id: str,
+) -> Optional[Dict[str, Any]]:
+    """
+    Busca um evento pelo google_event_id.
+
+    Args:
+        user_id: WhatsApp number do usuário
+        google_event_id: ID do evento no Google Calendar
+    """
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT * FROM calendar_events 
+               WHERE user_id = ? AND google_event_id = ? 
+               ORDER BY created_at DESC LIMIT 1""",
+            (user_id, google_event_id),
+        )
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+
+def delete_calendar_event_log(log_id: int, user_id: str) -> Dict[str, Any]:
     """Remove um log de evento de calendário."""
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "DELETE FROM calendar_logs WHERE id = ? AND user_id = ?", (log_id, user_id)
+            "DELETE FROM calendar_events WHERE id = ? AND user_id = ?",
+            (log_id, user_id),
         )
         return {"status": "ok", "deleted": cursor.rowcount}
