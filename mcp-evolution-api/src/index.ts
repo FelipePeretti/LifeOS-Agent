@@ -15,9 +15,7 @@ const server = new McpServer({
   version: config.mcp.version,
 });
 
-// ===== FERRAMENTAS PARA INFORMAÇÕES GERAIS =====
 
-// Verificar o status da API
 server.tool("getApiStatus", {}, async () => {
   try {
     const apiInfo = await evolutionService.getApiInfo();
@@ -41,9 +39,6 @@ server.tool("getApiStatus", {}, async () => {
   }
 });
 
-// ===== FERRAMENTAS PARA GESTÃO DE INSTÂNCIAS =====
-
-// Verificar status da instância
 server.tool("getInstanceStatus", {}, async () => {
   try {
     const status = await evolutionService.getInstanceStatus();
@@ -141,9 +136,6 @@ server.tool("restartInstance",
 );
 */
 
-// ===== FERRAMENTAS PARA MENSAGENS =====
-
-// Enviar mensagem de texto
 server.tool(
   "sendTextMessage",
   {
@@ -197,7 +189,6 @@ server.tool(
   },
 );
 
-// Enviar mídia
 server.tool(
   "sendMedia",
   {
@@ -394,9 +385,6 @@ server.tool("sendPoll",
 );
 */
 
-// ===== FERRAMENTAS PARA GESTÃO DE CHAT =====
-
-// Verificar número de WhatsApp
 server.tool(
   "checkWhatsAppNumber",
   {
@@ -434,7 +422,6 @@ server.tool(
   },
 );
 
-// Marcar mensagem como lida
 server.tool(
   "markMessageAsRead",
   {
@@ -641,9 +628,6 @@ server.tool("addGroupParticipants",
 );
 */
 
-// ===== FERRAMENTAS DE WEBHOOK =====
-
-// Configurar o webhook na Evolution API
 server.tool(
   "configureEvolutionWebhook",
   {
@@ -717,7 +701,6 @@ server.tool(
   },
 );
 
-// Obter configuração atual do webhook
 server.tool("getWebhookConfig", {}, async () => {
   try {
     const config = await evolutionService.getWebhook();
@@ -742,9 +725,6 @@ server.tool("getWebhookConfig", {}, async () => {
   }
 });
 
-// ===== RECURSOS PARA CONSULTAR INFORMAÇÕES =====
-
-// Visualizar contatos
 server.resource(
   "contacts",
   new ResourceTemplate("contacts://list", { list: undefined }),
@@ -779,7 +759,6 @@ server.resource(
   },
 );
 
-// Visualizar conversas
 server.resource(
   "chats",
   new ResourceTemplate("chats://list", { list: undefined }),
@@ -813,7 +792,6 @@ server.resource(
   },
 );
 
-// Visualizar grupos
 server.resource(
   "groups",
   new ResourceTemplate("groups://list", { list: undefined }),
@@ -848,7 +826,6 @@ server.resource(
   },
 );
 
-// Visualizar detalhes do perfil
 server.resource(
   "profile",
   new ResourceTemplate("profile://info", { list: undefined }),
@@ -877,7 +854,6 @@ server.resource(
   },
 );
 
-// Visualizar configurações de privacidade
 server.resource(
   "privacy",
   new ResourceTemplate("privacy://settings", { list: undefined }),
@@ -905,8 +881,6 @@ server.resource(
     }
   },
 );
-
-// ===== INICIALIZAÇÃO DO SERVIDOR =====
 
 export async function startServer() {
   console.error("Iniciando servidor MCP para Evolution API via STDIO...");

@@ -1,6 +1,3 @@
-// Interfaces para a Evolution API
-
-// Informações básicas da API
 export interface ApiInfo {
   status: number;
   message: string;
@@ -10,7 +7,6 @@ export interface ApiInfo {
   documentation?: string;
 }
 
-// Status da instância
 export interface InstanceStatus {
   state: string;
   status: string;
@@ -18,7 +14,6 @@ export interface InstanceStatus {
   message?: string;
 }
 
-// Mensagens de texto
 export interface SendTextMessageRequest {
   number: string;
   text: string;
@@ -45,7 +40,6 @@ export interface SendTextMessageResponse {
   status: string;
 }
 
-// Verificação de números
 export interface CheckNumberRequest {
   phone: string;
 }
@@ -58,7 +52,6 @@ export interface CheckNumberResponse {
   }>;
 }
 
-// Contatos e chats
 export interface Contact {
   id: string;
   name?: string;
@@ -79,7 +72,6 @@ export interface Chat {
   isGroup?: boolean;
 }
 
-// Templates de mensagem
 export interface SendTemplateRequest {
   number: string;
   template: {
@@ -106,7 +98,6 @@ export interface TemplateParameter {
   video?: { link: string };
 }
 
-// Mídia
 export interface SendMediaRequest {
   number: string;
   media: {
@@ -118,17 +109,15 @@ export interface SendMediaRequest {
   options?: MessageOptions;
 }
 
-// Áudios
 export interface SendAudioRequest {
   number: string;
   audio: {
     url: string;
-    ptt?: boolean; // Push to talk (mensagem de voz)
+    ptt?: boolean;
   };
   options?: MessageOptions;
 }
 
-// Stickers
 export interface SendStickerRequest {
   number: string;
   sticker: {
@@ -137,7 +126,6 @@ export interface SendStickerRequest {
   options?: MessageOptions;
 }
 
-// Localização
 export interface SendLocationRequest {
   number: string;
   location: {
@@ -149,7 +137,6 @@ export interface SendLocationRequest {
   options?: MessageOptions;
 }
 
-// Contatos
 export interface SendContactRequest {
   number: string;
   contact: {
@@ -160,7 +147,6 @@ export interface SendContactRequest {
   options?: MessageOptions;
 }
 
-// Reações
 export interface SendReactionRequest {
   reactionMessage: {
     key: {
@@ -171,7 +157,6 @@ export interface SendReactionRequest {
   };
 }
 
-// Enquetes
 export interface SendPollRequest {
   number: string;
   poll: {
@@ -182,7 +167,6 @@ export interface SendPollRequest {
   options?: MessageOptions;
 }
 
-// Listas
 export interface SendListRequest {
   number: string;
   list: {
@@ -205,11 +189,10 @@ export interface ListRow {
   description?: string;
 }
 
-// Status
 export interface SendStatusRequest {
   status: {
     type: "text" | "image" | "video" | "audio";
-    content: string; // Texto ou URL
+    content: string;
     caption?: string;
     options?: {
       backgroundColor?: string;
@@ -218,7 +201,6 @@ export interface SendStatusRequest {
   };
 }
 
-// Perfil
 export interface ProfileInfo {
   name?: string;
   status?: string;
@@ -236,7 +218,6 @@ export interface UpdateProfileRequest {
   status?: string;
 }
 
-// Privacidade
 export interface PrivacySettings {
   readreceipts: "all" | "contacts" | "none";
   profile: "all" | "contacts" | "none";
@@ -246,7 +227,6 @@ export interface PrivacySettings {
   groupadd: "all" | "contacts" | "none";
 }
 
-// Grupos
 export interface CreateGroupRequest {
   subject: string;
   participants: string[];
@@ -281,7 +261,6 @@ export interface GroupSettingRequest {
   setting: "announcement" | "locked" | "unlocked";
 }
 
-// Webhook
 export interface WebhookConfig {
   url: string;
   enabled: boolean;
@@ -290,7 +269,7 @@ export interface WebhookConfig {
   webhook_base64?: boolean;
 }
 
-export type WebhookEvent = 
+export type WebhookEvent =
   | "messages.upsert"
   | "messages.update"
   | "messages.delete"
@@ -305,13 +284,12 @@ export type WebhookEvent =
   | "chats.delete"
   | "contacts.upsert"
   | "contacts.update"
-  // Eventos legados (compatibilidade)
-  | "message" 
-  | "message.ack" 
-  | "qr" 
+
+  | "message"
+  | "message.ack"
+  | "qr"
   | "group.update";
 
-// Chatwoot
 export interface ChatwootConfig {
   enabled: boolean;
   account_id: string;
@@ -322,7 +300,6 @@ export interface ChatwootConfig {
   name_inbox?: string;
 }
 
-// Typebot
 export interface TypebotConfig {
   enabled: boolean;
   url: string;
@@ -334,7 +311,6 @@ export interface TypebotConfig {
   listening_from_me?: boolean;
 }
 
-// Instância
 export interface InstanceConfig {
   instanceName: string;
   webhook?: WebhookConfig;

@@ -32,7 +32,6 @@ import {
   InstanceConfig,
 } from "../types.js";
 
-// Cliente Axios configurado para a Evolution API
 const apiClient = axios.create({
   baseURL: config.evolutionApi.baseUrl,
   headers: {
@@ -41,7 +40,6 @@ const apiClient = axios.create({
   },
 });
 
-// Classe de serviço para a Evolution API
 export class EvolutionApiService {
   private instanceId: string;
 
@@ -49,9 +47,6 @@ export class EvolutionApiService {
     this.instanceId = instanceId;
   }
 
-  // ===== FUNÇÕES GERAIS DA API =====
-
-  // Obter informações sobre a API
   async getApiInfo(): Promise<ApiInfo> {
     try {
       const response = await apiClient.get<ApiInfo>("/");
@@ -62,9 +57,6 @@ export class EvolutionApiService {
     }
   }
 
-  // ===== GESTÃO DE INSTÂNCIAS =====
-
-  // Verificar status da instância
   async getInstanceStatus(): Promise<InstanceStatus> {
     try {
       const response = await apiClient.get<InstanceStatus>(
@@ -77,7 +69,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Criar uma nova instância
   async createInstance(
     instanceName: string,
     config?: InstanceConfig,
@@ -94,7 +85,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Excluir uma instância
   async deleteInstance(): Promise<any> {
     try {
       const response = await apiClient.delete(
@@ -107,7 +97,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Redefinir a instância
   async restartInstance(): Promise<any> {
     try {
       const response = await apiClient.put(
@@ -120,7 +109,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Configurar presença da instância
   async setPresence(
     presence:
       | "available"
@@ -143,7 +131,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Desconectar a instância do WhatsApp
   async logout(): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -156,9 +143,6 @@ export class EvolutionApiService {
     }
   }
 
-  // ===== WEBHOOK =====
-
-  // Configurar Webhook
   async setWebhook(webhook: WebhookConfig): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -172,7 +156,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Buscar configuração do Webhook
   async getWebhook(): Promise<any> {
     try {
       const response = await apiClient.get(`/webhook/find/${this.instanceId}`);
@@ -183,9 +166,6 @@ export class EvolutionApiService {
     }
   }
 
-  // ===== CONFIGURAÇÕES =====
-
-  // Definir configurações da instância
   async setSettings(settings: any): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -199,7 +179,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Buscar configurações da instância
   async getSettings(): Promise<any> {
     try {
       const response = await apiClient.get(`/settings/find/${this.instanceId}`);
@@ -210,9 +189,6 @@ export class EvolutionApiService {
     }
   }
 
-  // ===== ENVIO DE MENSAGENS =====
-
-  // Enviar mensagem de texto
   async sendTextMessage({
     number,
     text,
@@ -224,14 +200,12 @@ export class EvolutionApiService {
         text,
       };
 
-      // Evolution API v2 usa /message/sendText
       const response = await apiClient.post<SendTextMessageResponse>(
         `/message/sendText/${this.instanceId}`,
         payload,
       );
       return response.data;
     } catch (error: any) {
-      // Logs vão para stderr para não interferir com o protocolo MCP (JSON-RPC)
       console.error(
         "[MCP] Erro ao enviar mensagem:",
         error?.response?.data || error.message,
@@ -240,7 +214,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Enviar template
   async sendTemplate(data: SendTemplateRequest): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -254,7 +227,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Enviar status
   async sendStatus(data: SendStatusRequest): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -268,7 +240,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Enviar mídia
   async sendMedia(data: SendMediaRequest): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -282,7 +253,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Enviar áudio WhatsApp
   async sendAudio(data: SendAudioRequest): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -296,7 +266,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Enviar sticker
   async sendSticker(data: SendStickerRequest): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -310,7 +279,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Enviar localização
   async sendLocation(data: SendLocationRequest): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -324,7 +292,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Enviar contato
   async sendContact(data: SendContactRequest): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -338,7 +305,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Enviar reação
   async sendReaction(data: SendReactionRequest): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -352,7 +318,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Enviar enquete
   async sendPoll(data: SendPollRequest): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -366,7 +331,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Enviar lista
   async sendList(data: SendListRequest): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -380,9 +344,6 @@ export class EvolutionApiService {
     }
   }
 
-  // ===== CONTROLADOR DE CHAT =====
-
-  // Verificar se um número é do WhatsApp
   async checkWhatsAppNumber({
     phone,
   }: CheckNumberRequest): Promise<CheckNumberResponse> {
@@ -400,7 +361,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Marcar mensagem como lida
   async markMessageAsRead(messageId: string): Promise<any> {
     try {
       const response = await apiClient.put(
@@ -416,14 +376,13 @@ export class EvolutionApiService {
     }
   }
 
-  // Arquivar chat
   async archiveChat(number: string): Promise<any> {
     try {
       const response = await apiClient.put(
         `/chat/archiveChat/${this.instanceId}`,
         {
           phone: number,
-          action: "archive", // ou "unarchive"
+          action: "archive",
         },
       );
       return response.data;
@@ -433,7 +392,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Excluir mensagem para todos
   async deleteMessageForEveryone(messageId: string): Promise<any> {
     try {
       const response = await apiClient.delete(
@@ -446,7 +404,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Definir presença no chat
   async sendPresence(presence: string, chatJid: string): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -463,7 +420,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Buscar foto de perfil
   async fetchProfilePictureUrl(number: string): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -479,7 +435,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Buscar contatos
   async fetchContacts(): Promise<{ data: Contact[] }> {
     try {
       const response = await apiClient.post<{ data: Contact[] }>(
@@ -492,7 +447,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Buscar mensagens
   async findMessages(query: string, chatId?: string): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -509,7 +463,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Buscar mensagens de status
   async findStatusMessages(): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -522,7 +475,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Atualizar mensagem
   async updateMessage(messageId: string, text: string): Promise<any> {
     try {
       const response = await apiClient.put(
@@ -539,7 +491,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Buscar conversas
   async fetchChats(): Promise<{ data: Chat[] }> {
     try {
       const response = await apiClient.get<{ data: Chat[] }>(
@@ -552,9 +503,6 @@ export class EvolutionApiService {
     }
   }
 
-  // ===== CONFIGURAÇÕES DE PERFIL =====
-
-  // Buscar perfil de negócios
   async fetchBusinessProfile(): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -567,7 +515,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Buscar perfil
   async fetchProfile(): Promise<ProfileInfo> {
     try {
       const response = await apiClient.post<ProfileInfo>(
@@ -580,7 +527,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Atualizar nome do perfil
   async updateProfileName(name: string): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -596,7 +542,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Atualizar status do perfil
   async updateProfileStatus(status: string): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -612,7 +557,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Atualizar foto do perfil
   async updateProfilePicture(url: string): Promise<any> {
     try {
       const response = await apiClient.put(
@@ -628,7 +572,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Remover foto do perfil
   async removeProfilePicture(): Promise<any> {
     try {
       const response = await apiClient.delete(
@@ -641,7 +584,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Buscar configurações de privacidade
   async fetchPrivacySettings(): Promise<PrivacySettings> {
     try {
       const response = await apiClient.get<PrivacySettings>(
@@ -654,7 +596,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Atualizar configurações de privacidade
   async updatePrivacySettings(
     settings: Partial<PrivacySettings>,
   ): Promise<any> {
@@ -670,9 +611,6 @@ export class EvolutionApiService {
     }
   }
 
-  // ===== GERENCIAMENTO DE GRUPOS =====
-
-  // Criar grupo
   async createGroup(data: CreateGroupRequest): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -686,7 +624,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Atualizar foto do grupo
   async updateGroupPicture(groupId: string, url: string): Promise<any> {
     try {
       const response = await apiClient.put(
@@ -703,7 +640,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Atualizar assunto do grupo
   async updateGroupSubject(groupId: string, subject: string): Promise<any> {
     try {
       const response = await apiClient.put(
@@ -720,7 +656,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Atualizar descrição do grupo
   async updateGroupDescription(
     groupId: string,
     description: string,
@@ -740,7 +675,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Buscar código de convite
   async fetchInviteCode(groupId: string): Promise<any> {
     try {
       const response = await apiClient.get(
@@ -753,7 +687,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Aceitar código de convite
   async acceptInviteCode(code: string): Promise<any> {
     try {
       const response = await apiClient.get(
@@ -766,7 +699,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Revogar código de convite
   async revokeInviteCode(groupId: string): Promise<any> {
     try {
       const response = await apiClient.put(
@@ -779,7 +711,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Enviar convite de grupo
   async sendGroupInvite(groupId: string, numbers: string[]): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -796,7 +727,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Buscar grupo por código de convite
   async findGroupByInviteCode(code: string): Promise<any> {
     try {
       const response = await apiClient.get(
@@ -809,7 +739,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Buscar grupo por JID
   async findGroupByJid(groupId: string): Promise<GroupInfo> {
     try {
       const response = await apiClient.get<GroupInfo>(
@@ -822,7 +751,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Buscar todos os grupos
   async fetchAllGroups(): Promise<{ data: GroupInfo[] }> {
     try {
       const response = await apiClient.get<{ data: GroupInfo[] }>(
@@ -835,7 +763,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Buscar membros do grupo
   async findGroupMembers(groupId: string): Promise<any> {
     try {
       const response = await apiClient.get(
@@ -848,7 +775,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Atualizar membros do grupo
   async updateGroupMembers(data: GroupUpdateRequest): Promise<any> {
     try {
       const response = await apiClient.put(
@@ -862,7 +788,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Atualizar configuração do grupo
   async updateGroupSetting(data: GroupSettingRequest): Promise<any> {
     try {
       const response = await apiClient.put(
@@ -876,14 +801,13 @@ export class EvolutionApiService {
     }
   }
 
-  // Alternar mensagens efêmeras
   async toggleEphemeral(groupId: string, expiration: number): Promise<any> {
     try {
       const response = await apiClient.put(
         `/group/toggleEphemeral/${this.instanceId}`,
         {
           groupId,
-          expiration, // 0, 86400, 604800, 7776000
+          expiration,
         },
       );
       return response.data;
@@ -893,7 +817,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Sair do grupo
   async leaveGroup(groupId: string): Promise<any> {
     try {
       const response = await apiClient.delete(
@@ -906,9 +829,6 @@ export class EvolutionApiService {
     }
   }
 
-  // ===== TYPEBOT =====
-
-  // Configurar Typebot
   async setTypebot(config: TypebotConfig): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -922,7 +842,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Iniciar Typebot
   async startTypebot(number: string): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -938,7 +857,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Buscar configuração do Typebot
   async findTypebot(): Promise<TypebotConfig> {
     try {
       const response = await apiClient.get<TypebotConfig>(
@@ -951,7 +869,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Alterar status do Typebot
   async changeTypebotStatus(enabled: boolean): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -967,9 +884,6 @@ export class EvolutionApiService {
     }
   }
 
-  // ===== CHATWOOT =====
-
-  // Configurar Chatwoot
   async setChatwoot(config: ChatwootConfig): Promise<any> {
     try {
       const response = await apiClient.post(
@@ -983,7 +897,6 @@ export class EvolutionApiService {
     }
   }
 
-  // Buscar configuração do Chatwoot
   async findChatwoot(): Promise<ChatwootConfig> {
     try {
       const response = await apiClient.get<ChatwootConfig>(

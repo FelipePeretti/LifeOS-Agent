@@ -5,7 +5,6 @@ from .setup import get_connection
 
 
 def create_user(whatsapp_number: str, name: Optional[str] = None) -> Dict[str, Any]:
-    """Cria um novo usuário no banco de dados."""
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -16,7 +15,6 @@ def create_user(whatsapp_number: str, name: Optional[str] = None) -> Dict[str, A
 
 
 def get_user(whatsapp_number: str) -> Optional[Dict[str, Any]]:
-    """Busca um usuário pelo número do WhatsApp."""
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -27,7 +25,6 @@ def get_user(whatsapp_number: str) -> Optional[Dict[str, Any]]:
 
 
 def check_user_exists(whatsapp_number: str) -> Dict[str, Any]:
-    """Verifica se um usuário existe e se é a primeira interação do dia."""
     user = get_user(whatsapp_number)
     if user:
         last_interaction = user.get("last_interaction")
@@ -48,7 +45,6 @@ def check_user_exists(whatsapp_number: str) -> Dict[str, Any]:
 
 
 def update_user_last_interaction(whatsapp_number: str) -> Dict[str, Any]:
-    """Atualiza a última interação do usuário para agora."""
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -59,7 +55,6 @@ def update_user_last_interaction(whatsapp_number: str) -> Dict[str, Any]:
 
 
 def update_user(whatsapp_number: str, name: str) -> Dict[str, Any]:
-    """Atualiza o nome de um usuário."""
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -72,7 +67,6 @@ def update_user(whatsapp_number: str, name: str) -> Dict[str, Any]:
 def get_or_create_user(
     whatsapp_number: str, name: Optional[str] = None
 ) -> Dict[str, Any]:
-    """Busca um usuário ou cria se não existir. Atualiza a última interação."""
     check_result = check_user_exists(whatsapp_number)
 
     if check_result["exists"]:
@@ -98,7 +92,6 @@ def add_transaction(
     transaction_type: str,
     date: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Adiciona uma transação financeira."""
     if transaction_type not in ("income", "expense"):
         return {"status": "error", "error": "type must be 'income' or 'expense'"}
 
@@ -127,7 +120,6 @@ def get_transactions(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """Retorna transações do usuário com filtros opcionais."""
     query = "SELECT * FROM transactions WHERE user_id = ?"
     params: List[Any] = [user_id]
 
@@ -154,7 +146,6 @@ def get_transactions(
 
 
 def get_balance(user_id: str) -> Dict[str, float]:
-    """Retorna o saldo do usuário (receitas, despesas e balanço)."""
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -175,7 +166,6 @@ def get_balance(user_id: str) -> Dict[str, float]:
 def get_expenses_by_category(
     user_id: str, month: Optional[str] = None
 ) -> List[Dict[str, Any]]:
-    """Retorna gastos agrupados por categoria."""
     query = """
         SELECT category, SUM(amount) as total
         FROM transactions 
@@ -203,7 +193,6 @@ def update_transaction(
     category: Optional[str] = None,
     transaction_type: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Atualiza uma transação existente."""
     updates = []
     params: List[Any] = []
 
@@ -240,7 +229,6 @@ def update_transaction(
 
 
 def delete_transaction(transaction_id: int, user_id: str) -> Dict[str, Any]:
-    """Deleta uma transação."""
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -253,7 +241,6 @@ def delete_transaction(transaction_id: int, user_id: str) -> Dict[str, Any]:
 def set_budget_goal(
     user_id: str, category: str, monthly_limit: float
 ) -> Dict[str, Any]:
-    """Define ou atualiza meta de orçamento para uma categoria."""
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -266,7 +253,6 @@ def set_budget_goal(
 
 
 def get_budget_goals(user_id: str) -> List[Dict[str, Any]]:
-    """Retorna todas as metas de orçamento do usuário."""
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM budget_goals WHERE user_id = ?", (user_id,))
@@ -276,7 +262,6 @@ def get_budget_goals(user_id: str) -> List[Dict[str, Any]]:
 def get_budget_status(
     user_id: str, month: Optional[str] = None
 ) -> List[Dict[str, Any]]:
-    """Retorna o status do orçamento comparando metas com gastos reais."""
     month = month or datetime.now().strftime("%Y-%m")
 
     with get_connection() as conn:
@@ -316,7 +301,6 @@ def get_budget_status(
 
 
 def delete_budget_goal(user_id: str, category: str) -> Dict[str, Any]:
-    """Remove uma meta de orçamento."""
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -332,8 +316,6 @@ def add_calendar_log(
     event_date: str,
     google_event_id: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Registra um evento de calendário."""
-    # Garante que o usuário existe
     create_user(user_id)
 
     with get_connection() as conn:
@@ -352,7 +334,6 @@ def get_calendar_logs(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """Retorna logs de eventos de calendário."""
     query = "SELECT * FROM calendar_logs WHERE user_id = ?"
     params: List[Any] = [user_id]
 
@@ -373,7 +354,6 @@ def get_calendar_logs(
 
 
 def delete_calendar_log(log_id: int, user_id: str) -> Dict[str, Any]:
-    """Remove um log de evento de calendário."""
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(

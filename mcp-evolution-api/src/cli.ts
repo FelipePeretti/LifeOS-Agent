@@ -8,7 +8,6 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Exibe informações sobre o MCP Server (DEVE ser console.error para não interferir com STDIO)
 console.error(`
 ╔════════════════════════════════════════════════════╗
 ║            MCP SERVER PARA EVOLUTION API           ║
@@ -18,18 +17,14 @@ console.error(`
 ╚════════════════════════════════════════════════════╝
 `);
 
-// Inicia os servidores
 const enableWebSocket = process.env.ENABLE_WEBSOCKET === "true";
 
 async function init() {
   try {
-    // Sempre inicia o servidor STDIO
     await startServer();
 
-    // Inicia o servidor WebSocket se habilitado
     if (enableWebSocket) {
       const port = process.env.PORT || 3000;
-      // await startWebSocketServer(Number(port));
     }
   } catch (error) {
     console.error("Erro ao iniciar servidores MCP:", error);
