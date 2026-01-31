@@ -12,6 +12,15 @@ EVOLUTION_INSTANCE = os.getenv("EVOLUTION_API_INSTANCE", "LifeOs")
 
 
 def download_audio_from_message(message_id: str) -> Optional[str]:
+    """
+    Baixa o áudio de uma mensagem do WhatsApp e retorna o caminho do arquivo temporário.
+
+    Args:
+        message_id: ID da mensagem que contém o áudio
+
+    Returns:
+        Caminho do arquivo de áudio baixado, ou None se falhar
+    """
     if not EVOLUTION_API_KEY:
         return None
 
@@ -51,6 +60,7 @@ def download_audio_from_message(message_id: str) -> Optional[str]:
 
 
 def cleanup_audio_file(file_path: str) -> None:
+    """Remove o arquivo de áudio temporário."""
     try:
         if file_path and os.path.exists(file_path):
             os.unlink(file_path)

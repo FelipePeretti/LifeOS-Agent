@@ -13,6 +13,11 @@ from life_os_agent.tools.finance.transaction_pipeline import (
 
 
 def process_finance_input(user_text: str, user_id: str = "default") -> Dict[str, Any]:
+    """
+    Processa entrada financeira de forma unificada.
+    Decide automaticamente se é uma nova transação ou confirmação de pendência.
+    Retorna JSON indicando qual ação o Orquestrador deve tomar (SALVAR ou CONFIRMAR).
+    """
     if not user_text or len(user_text.strip()) < 2:
         return {"status": "ignored", "message": "Input too short coverage"}
 

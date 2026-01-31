@@ -8,6 +8,15 @@ from life_os_agent.tools.whatsapp.download_audio import (
 
 
 def transcribe_whatsapp_audio(message_id: str) -> Dict[str, Any]:
+    """
+    Baixa e transcreve um áudio de mensagem do WhatsApp.
+
+    Args:
+        message_id: ID da mensagem que contém o áudio
+
+    Returns:
+        Dict com status e texto transcrito ou mensagem de erro
+    """
     if not message_id:
         return {"status": "error", "error": "message_id é obrigatório"}
 

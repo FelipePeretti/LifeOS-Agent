@@ -10,6 +10,13 @@ EVOLUTION_INSTANCE = os.getenv("EVOLUTION_API_INSTANCE", "LifeOs")
 
 
 def send_whatsapp_response(phone_number: str, message: str) -> Dict[str, Any]:
+    """
+    Envia uma mensagem de resposta via WhatsApp.
+
+    Args:
+        phone_number: Número do destinatário (ex: 5564999999999)
+        message: Texto da mensagem
+    """
     if not phone_number:
         return {"status": "error", "error": "phone_number é obrigatório"}
 
