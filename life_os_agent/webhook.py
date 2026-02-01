@@ -171,6 +171,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
         try:
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length)
+            print(f"\n[Webhook] RAW MESSAGE: {body.decode('utf-8')}\n", flush=True)
             webhook_data = json.loads(body.decode("utf-8"))
 
             message_info = extract_message_from_webhook(webhook_data)
