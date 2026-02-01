@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from google.adk.agents import LlmAgent
 
-from life_os_agent.tools.perception.transcribe_audio import transcribe_whatsapp_audio
+from life_os_agent.tools.transcriber.transcribe_audio import transcribe_whatsapp_audio
 
-PERCEPTION_INSTRUCTION = """
-Você é o Agente de Percepção (Perception Agent) do LifeOS.
+TRANSCRIBER_INSTRUCTION = """
+Você é o Agente de Percepção (Transcriber Agent) do LifeOS.
 Seu objetivo é transcrever áudios do WhatsApp para texto.
 
 ## QUANDO VOCÊ É CHAMADO
@@ -42,16 +42,16 @@ Input: "[ÁUDIO RECEBIDO - message_id: 3A5F1234ABC]"
 """
 
 
-def _log_perception_agent(callback_context):
-    print("[AGENT] 👁️ PerceptionAgent CHAMADO", flush=True)
+def _log_transcriber_agent(callback_context):
+    print("[AGENT] 👁️ TranscriberAgent CHAMADO", flush=True)
 
 
-def build_perception_agent(model) -> LlmAgent:
+def build_transcriber_agent(model) -> LlmAgent:
     return LlmAgent(
-        name="Perception",
+        name="Transcriber",
         model=model,
         description="Transcreve áudios do WhatsApp. Recebe [ÁUDIO RECEBIDO - message_id: X] e retorna texto.",
-        instruction=PERCEPTION_INSTRUCTION,
-        before_agent_callback=_log_perception_agent,
+        instruction=TRANSCRIBER_INSTRUCTION,
+        before_agent_callback=_log_transcriber_agent,
         tools=[transcribe_whatsapp_audio],
     )

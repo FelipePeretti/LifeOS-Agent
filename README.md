@@ -21,8 +21,8 @@ O LifeOS-Agent é composto por vários agentes especializados que trabalham em c
 
 - **Orchestrator**: Coordena todas as operações, decide qual agente usar baseado na solicitação do usuário.
 - **Finance**: Gerencia transações, classifica despesas usando ML (modelo de classificação treinado), gera relatórios financeiros.
-- **Comms**: Lida com comunicação via WhatsApp, envia respostas e gerencia conversas.
-- **Perception**: Processa entradas multimídia como áudio (transcrição via Whisper) e imagens.
+- **Communicator**: Lida com comunicação via WhatsApp, envia respostas e gerencia conversas.
+- **Transcriber**: Processa entradas multimídia como áudio (transcrição via Whisper) e imagens.
 - **Strategist**: Planeja e otimiza tarefas, sugere ações baseadas em dados históricos.
 - **Calendar**: Integra com Google Calendar para agendamento, consultas e gerenciamento de eventos.
 
@@ -149,8 +149,8 @@ O banco SQLite é inicializado automaticamente pelo entrypoint do container.
 │   ├── agents/                 # Agentes especializados
 │   │   ├── orchestrator.py
 │   │   ├── finance.py
-│   │   ├── comms.py
-│   │   ├── perception.py
+│   │   ├── communicator.py
+│   │   ├── transcriber.py
 │   │   ├── strategist.py
 │   │   └── calendar.py
 │   ├── database/               # SQLite local

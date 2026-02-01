@@ -19,5 +19,5 @@ O que ele continua tendo de "agente":
 
 Ele decide se o input é financeiro ou não (classificação semântica).
 Ele interpreta contextos complexos ("cancele o último" - um sistema clássico precisaria de botões, o agente entende a intenção).
-Ele adapta a resposta do CommsAgent conforme o contexto emocional.
+Ele adapta a resposta do CommunicatorAgent conforme o contexto emocional.
 Então, transformamos ele em um "Gerente com Manual de Instruções" em vez de um "Estagiário Solto".

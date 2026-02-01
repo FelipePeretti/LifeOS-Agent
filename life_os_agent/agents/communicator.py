@@ -5,8 +5,8 @@ from google.adk.agents import LlmAgent
 from life_os_agent.tools.whatsapp.send_response import send_whatsapp_response
 from life_os_agent.tools.whatsapp.templates import send_template_message_tool
 
-COMMS_INSTRUCTION = """
-Você é o CommsAgent do LifeOS - a VOZ do sistema no WhatsApp.
+COMMUNICATOR_INSTRUCTION = """
+Você é o CommunicatorAgent do LifeOS - a VOZ do sistema no WhatsApp.
 
 ## OBJETIVO
 Transformar entradas técnicas (JSON, estado do sistema) em mensagens humanas, claras e amigáveis em PT-BR.
@@ -85,16 +85,16 @@ Se o Orchestrator informar que é "Fora do Escopo", explique polidamente: "Sou u
 """
 
 
-def _log_comms_agent(callback_context):
-    print("[AGENT] 📱 CommsAgent CHAMADO", flush=True)
+def _log_communicator_agent(callback_context):
+    print("[AGENT] 📱 CommunicatorAgent CHAMADO", flush=True)
 
 
-def build_comms_agent(model) -> LlmAgent:
+def build_communicator_agent(model) -> LlmAgent:
     return LlmAgent(
-        name="CommsAgent",
+        name="CommunicatorAgent",
         model=model,
         description="Envia mensagens para o usuário via WhatsApp. Pode usar templates padronizados.",
-        instruction=COMMS_INSTRUCTION,
-        before_agent_callback=_log_comms_agent,
+        instruction=COMMUNICATOR_INSTRUCTION,
+        before_agent_callback=_log_communicator_agent,
         tools=[send_whatsapp_response, send_template_message_tool],
     )

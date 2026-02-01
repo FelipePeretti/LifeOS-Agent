@@ -36,7 +36,7 @@ def send_whatsapp_response(phone_number: str, message: str) -> Dict[str, Any]:
 
         with urllib.request.urlopen(req, timeout=30) as response:
             result = json.loads(response.read().decode("utf-8"))
-            print(f"[CommsAgent] ✅ Mensagem enviada: {message[:80]}...", flush=True)
+            print(f"[CommunicatorAgent] ✅ Mensagem enviada: {message[:80]}...", flush=True)
             return {
                 "status": "success",
                 "message_id": result.get("key", {}).get("id", ""),
