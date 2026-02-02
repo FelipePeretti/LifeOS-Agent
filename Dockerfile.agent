@@ -15,19 +15,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 
-COPY mcp-evolution-api/package.json mcp-evolution-api/package-lock.json* mcp-evolution-api/pnpm-lock.yaml* ./mcp-evolution-api/
-WORKDIR /app/mcp-evolution-api
-RUN npm install --legacy-peer-deps
-WORKDIR /app
-
-
-COPY mcp-evolution-api/tsconfig.json ./mcp-evolution-api/
-COPY mcp-evolution-api/src/ ./mcp-evolution-api/src/
-WORKDIR /app/mcp-evolution-api
-RUN npm run build
-WORKDIR /app
-
-
 COPY life_os_agent/ ./life_os_agent/
 COPY init_db.py ./init_db.py
 
