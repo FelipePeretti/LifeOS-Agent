@@ -18,7 +18,7 @@ def _log_orchestrator(callback_context):
 
 def _extract_phone_callback(callback_context):
     _log_orchestrator(callback_context)
-    
+
     """Extrai user_phone da mensagem e salva no state."""
     try:
         user_content = callback_context.user_content
@@ -72,17 +72,23 @@ Este é o fluxo mais complexo. Precisamos salvar E verificar o impacto no orçam
    *(Retorna: JSON com amount, category, type)*
 3. **DatabaseAgent**: "salvar transação: user=[PHONE], [DADOS DO JSON DO FINANCE]"
    *(Retorna: Status OK)*
-4. **StrategistAgent**: "verificar status do orçamento para [PHONE]"
-   *(Retorna: JSON com budget_status, metas, etc)*
-5. **CalendarAgent**: Gerencia agenda do Google Calendar (eventos, compromissos)
-6. **CommunicatorAgent**: ENVIE OS FATOS!
-   Input: "Transação de [AMOUNT] em [CATEGORY] salva. Status do orçamento: [RESUMO DO STRATEGIST]."
-   *(O CommunicatorAgent vai decidir usar o template de confirmação)*
+4. **StrategistAgent**: "verificar status do orçamento para [PHONE] na categoria [CATEGORIA DA TRANSAÇÃO]"
+   *(IMPORTANTE: Pergunte APENAS sobre a categoria da transação atual!)*
+5. **CommunicatorAgent**: ENVIE OS FATOS!
+   Input: "Transação de [AMOUNT] em [CATEGORY] salva. Status da meta de [CATEGORY]: [DADOS APENAS DESSA CATEGORIA]."
+   *(CRÍTICO: Envie APENAS dados da categoria da transação, não de outras categorias)*
+
+### 1.1 FLUXO DE DEFINIÇÃO DE META ("Definir meta de 500 para mercado")
+1. **DatabaseAgent**: "verificar usuário [PHONE], nome: [NAME]"
+2. **DatabaseAgent**: "set_budget_goal para user=[PHONE], category=[CATEGORIA], limit=[VALOR]"
+3. **CommunicatorAgent**: "Meta de orçamento definida: categoria [CATEGORIA], limite R$ [VALOR]."
+   *(O CommunicatorAgent deve usar o template goal_set)*
 
 ### 2. FLUXO DE SAUDAÇÃO/CONSULTA ("Bom dia", "Meu saldo")
 1. **DatabaseAgent**: "verificar usuário [PHONE], nome: [NAME]"
-2. **StrategistAgent** (Se for consulta): "consultar saldo/metas para [PHONE]"
+2. **StrategistAgent** (Se for consulta de meta): "consultar meta de [CATEGORIA] para [PHONE]"
 3. **CommunicatorAgent**: "O usuário disse '[TEXTO]'. Dados do sistema: [DADOS DO DATABASE/STRATEGIST]."
+   *(Se for consulta de meta, o Communicator deve usar template budget_status)*
 
 ## FLUXO PARA AGENDA/CALENDÁRIO (reunião, compromisso, evento, agenda)
 

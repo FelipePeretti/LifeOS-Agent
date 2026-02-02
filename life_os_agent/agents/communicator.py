@@ -54,7 +54,8 @@ Se o usuário perguntar algo fora do escopo (ex.: fatos gerais, esportes, curios
 - **Dados necessários:**
   - `amount`: Valor (ex: "50,00")
   - `category`: Categoria (ex: "Uber")
-  - `budget_info`: Frase de contexto (ex: "50% da meta de Transporte atingida")
+  - `budget_info`: Frase de contexto APENAS da categoria da transação (ex: "50% da meta de Transporte atingida")
+- **IMPORTANTE:** O budget_info deve ser APENAS sobre a categoria da transação atual, NÃO sobre outras categorias!
 
 ### 🌞 Resumo Diário
 - **Quando usar:** Quando o usuário pede "resumo", "bom dia" ou "agenda".
@@ -63,10 +64,28 @@ Se o usuário perguntar algo fora do escopo (ex.: fatos gerais, esportes, curios
   - `balance`: Saldo total
   - `events`: Lista resumida de eventos
 
-### ⚠️ Alerta de Gastos
-- **Quando usar:** Quando o sistema avisa que uma meta estourou ou está perto.
+### ⚠️ Alerta de Gastos (para alertas automáticos)
+- **Quando usar:** Quando o sistema avisa que uma meta estourou ou está perto (acima de 80%).
 - **Tool:** `send_template_message_tool(..., template_name="alert_spending", data={...})`
 - **Dados necessários:** `category`, `percent`, `spent`, `limit`.
+
+### 📊 Status do Orçamento (para consultas do usuário)
+- **Quando usar:** Quando o usuário PERGUNTA sobre sua meta/orçamento (ex: "quanto posso gastar?", "minha meta", "status do mercado").
+- **Tool:** `send_template_message_tool(..., template_name="budget_status", data={...})`
+- **Dados necessários:**
+  - `category`: Categoria consultada
+  - `limit`: Valor da meta
+  - `spent`: Quanto já gastou
+  - `percent`: Porcentagem utilizada
+  - `remaining`: Quanto resta
+  - `alert_message`: Mensagem contextual ("Tudo sob controle! ✅" ou "Atenção: você está perto do limite! ⚠️")
+
+### 🎯 Meta Definida
+- **Quando usar:** Quando uma nova meta de orçamento foi criada/definida.
+- **Tool:** `send_template_message_tool(..., template_name="goal_set", data={...})`
+- **Dados necessários:**
+  - `category`: Categoria da meta
+  - `limit`: Valor limite mensal
 
 ### 👋 Boas-vindas
 - **Quando usar:** Primeira interação.

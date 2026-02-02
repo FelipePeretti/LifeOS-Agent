@@ -17,13 +17,26 @@ MESSAGE_TEMPLATES = {
         "Gasto atual: R$ {spent} / Meta: R$ {limit}\n\n"
         "Recomendo cautela nos próximos dias!"
     ),
+    "budget_status": (
+        "📊 *Status do Orçamento - {category}*\n\n"
+        "💵 Meta: R$ {limit}\n"
+        "💸 Gasto: R$ {spent} ({percent}%)\n"
+        "💰 Restante: R$ {remaining}\n\n"
+        "{alert_message}"
+    ),
+    "goal_set": (
+        "🎯 *Meta Definida com Sucesso!*\n\n"
+        "📂 Categoria: *{category}*\n"
+        "💰 Limite mensal: R$ {limit}\n\n"
+        "Vou te avisar quando estiver perto do limite."
+    ),
     "welcome": (
         "👋 *Olá {name}!* Sou o LifeOS.\n\n"
         "Estou aqui para organizar sua vida financeira e pessoal.\n"
         "Você pode me dizer coisas como:\n"
         '- "Gastei 50 no almoço"\n'
-        '- "Qual meu saldo?"\n'
-        '- "Me lembre de beber água"'
+        '- "Quanto gastei de mercado?"\n'
+        '- "Marque uma reunião amanhã às 15h"'
     ),
     "transaction_confirmed": (
         "✅ *Registrado!*\n\nR$ {amount} em *{category}*\n{budget_info}"
