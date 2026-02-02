@@ -73,26 +73,20 @@ def build_database_agent(model) -> LlmAgent:
         instruction=DATABASE_INSTRUCTION,
         before_agent_callback=_log_database_agent,
         tools=[
-            # Tools de usuário (da pasta tools/)
             get_or_create_user_tool,
-            # Tools de usuário (do crud)
             check_user_exists,
             update_user_last_interaction,
-            # Tools de transações
             add_transaction,
             get_transactions,
             update_transaction,
             delete_transaction,
             get_balance,
             get_expenses_by_category,
-            # Tools de metas
             set_budget_goal,
             get_budget_status,
-            # Tools de calendário
             add_calendar_log,
             get_calendar_events,
             get_event_by_google_id,
-            # Inicialização
             init_database,
         ],
     )

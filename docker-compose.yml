@@ -75,9 +75,7 @@ services:
     env_file:
       - .env
     volumes:
-      # Monta o banco local no container
       - ./life_os_agent/database:/data
-      # Monta o código fonte para hot reload
       - ./life_os_agent:/app/life_os_agent
     networks:
       - evolution_network
@@ -99,10 +97,7 @@ services:
     env_file:
       - .env.calendar
     volumes:
-      # Credenciais OAuth do Google Cloud (obrigatório)
-      # Arquivo deve ser obtido no Google Cloud Console
       - ./mcp-google-calendar/gcp-oauth.keys.json:/app/gcp-oauth.keys.json:ro
-      # Volume persistente para tokens OAuth dos usuários
       - calendar_tokens:/home/nodejs/.config/google-calendar-mcp
     networks:
       - evolution_network

@@ -20,7 +20,7 @@ def main():
         print("   - users")
         print("   - transactions")
         print("   - budget_goals")
-        print("   - calendar_logs")
+        print("   - calendar_events")
     else:
         print("❌ Erro ao criar banco de dados")
         sys.exit(1)
