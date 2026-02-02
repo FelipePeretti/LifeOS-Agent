@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from google.adk.agents import LlmAgent
 from google.adk.tools import agent_tool
 
@@ -13,6 +15,21 @@ from life_os_agent.agents.strategist import build_strategist_agent
 
 def _log_orchestrator(callback_context):
     print("[AGENT] 🎯 Orchestrator CHAMADO", flush=True)
+
+def _extract_phone_callback(callback_context):
+    _log_orchestrator(callback_context)
+    
+    """Extrai user_phone da mensagem e salva no state."""
+    try:
+        user_content = callback_context.user_content
+        if user_content and user_content.parts:
+            for part in user_content.parts:
+                if hasattr(part, 'text') and part.text:
+                    match = re.search(r'user_phone:\s*(\d+)', part.text)
+                    if match:
+                        callback_context.state["user_phone"] = match.group(1)
+    except Exception:
+        pass
 
 
 ORCHESTRATOR_INSTRUCTION = """
@@ -124,7 +141,7 @@ def build_orchestrator_agent(model) -> LlmAgent:
         model=model,
         description="Coordenador central do LifeOS. Usa tools para chamar agentes especializados.",
         instruction=ORCHESTRATOR_INSTRUCTION,
-        before_agent_callback=_log_orchestrator,
+        before_agent_callback=_extract_phone_callback,
         tools=[
             database_tool,
             finance_tool,

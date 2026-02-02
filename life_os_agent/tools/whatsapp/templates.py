@@ -1,5 +1,7 @@
 from typing import Any, Dict
 
+from google.adk.tools.tool_context import ToolContext
+
 from life_os_agent.tools.whatsapp.send_response import send_whatsapp_response
 
 MESSAGE_TEMPLATES = {
@@ -41,10 +43,10 @@ def render_template(template_name: str, **kwargs) -> str:
 
 
 def send_template_message_tool(
-    phone_number: str, template_name: str, data: Dict[str, Any]
+    template_name: str, data: Dict[str, Any], tool_context: ToolContext
 ) -> Dict[str, Any]:
     try:
         message_body = render_template(template_name, **data)
-        return send_whatsapp_response(phone_number, message_body)
+        return send_whatsapp_response(message_body, tool_context)
     except Exception as e:
         return {"status": "error", "message": str(e)}

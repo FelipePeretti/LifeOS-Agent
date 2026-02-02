@@ -4,21 +4,19 @@ import urllib.error
 import urllib.request
 from typing import Any, Dict
 
+from google.adk.tools.tool_context import ToolContext
+
 EVOLUTION_API_URL = os.getenv("EVOLUTION_API_URL", "http://evolution-api:8080")
 EVOLUTION_API_KEY = os.getenv("EVOLUTION_API_KEY", "")
 EVOLUTION_INSTANCE = os.getenv("EVOLUTION_API_INSTANCE", "LifeOs")
 
 
-def send_whatsapp_response(phone_number: str, message: str) -> Dict[str, Any]:
-    """
-    Envia uma mensagem de resposta via WhatsApp.
-
-    Args:
-        phone_number: Número do destinatário
-        message: Texto da mensagem
-    """
+def send_whatsapp_response(message: str, tool_context: ToolContext) -> Dict[str, Any]:
+    """Envia mensagem via WhatsApp. O número é obtido do state da sessão."""
+    phone_number = tool_context.state.get("user_phone")
+    
     if not phone_number:
-        return {"status": "error", "error": "phone_number é obrigatório"}
+        return {"status": "error", "error": "user_phone não encontrado no state"}
 
     if not message:
         return {"status": "error", "error": "Mensagem vazia"}
