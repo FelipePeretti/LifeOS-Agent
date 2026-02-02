@@ -9,12 +9,13 @@ from life_os_agent.agents.calendar import build_calendar_agent
 from life_os_agent.agents.communicator import build_communicator_agent
 from life_os_agent.agents.database import build_database_agent
 from life_os_agent.agents.finance import build_finance_agent
-from life_os_agent.agents.transcriber import build_transcriber_agent
 from life_os_agent.agents.strategist import build_strategist_agent
+from life_os_agent.agents.transcriber import build_transcriber_agent
 
 
 def _log_orchestrator(callback_context):
     print("[AGENT] 🎯 Orchestrator CHAMADO", flush=True)
+
 
 def _extract_phone_callback(callback_context):
     _log_orchestrator(callback_context)
@@ -24,8 +25,8 @@ def _extract_phone_callback(callback_context):
         user_content = callback_context.user_content
         if user_content and user_content.parts:
             for part in user_content.parts:
-                if hasattr(part, 'text') and part.text:
-                    match = re.search(r'user_phone:\s*(\d+)', part.text)
+                if hasattr(part, "text") and part.text:
+                    match = re.search(r"user_phone:\s*(\d+)", part.text)
                     if match:
                         callback_context.state["user_phone"] = match.group(1)
     except Exception:
@@ -84,11 +85,17 @@ Este é o fluxo mais complexo. Precisamos salvar E verificar o impacto no orçam
 3. **CommunicatorAgent**: "Meta de orçamento definida: categoria [CATEGORIA], limite R$ [VALOR]."
    *(O CommunicatorAgent deve usar o template goal_set)*
 
-### 2. FLUXO DE SAUDAÇÃO/CONSULTA ("Bom dia", "Meu saldo")
+### 2. FLUXO DE SAUDAÇÃO/CONSULTA ("Olá", "Oi", "Bom dia", "Meu saldo")
 1. **DatabaseAgent**: "verificar usuário [PHONE], nome: [NAME]"
-2. **StrategistAgent** (Se for consulta de meta): "consultar meta de [CATEGORIA] para [PHONE]"
-3. **CommunicatorAgent**: "O usuário disse '[TEXTO]'. Dados do sistema: [DADOS DO DATABASE/STRATEGIST]."
-   *(Se for consulta de meta, o Communicator deve usar template budget_status)*
+   - O DatabaseAgent retorna `is_new_user: True` ou `is_new_user: False`
+2. **SE is_new_user = True** (USUÁRIO NOVO - BOAS-VINDAS OBRIGATÓRIO!):
+   - **CommunicatorAgent**: "phone: [PHONE], USUÁRIO NOVO! Nome: [NAME]. Envie mensagem de boas-vindas apresentando o LifeOS."
+   - O CommunicatorAgent DEVE usar o template `welcome` ou enviar uma mensagem de boas-vindas personalizada.
+3. **SE is_new_user = False** (USUÁRIO EXISTENTE):
+   - **StrategistAgent** (Se for consulta de meta): "consultar meta de [CATEGORIA] para [PHONE]"
+   - **CommunicatorAgent**: "phone: [PHONE], O usuário disse '[TEXTO]'. Dados do sistema: [DADOS]."
+
+**CRÍTICO**: Após o DatabaseAgent, SEMPRE chame o CommunicatorAgent! Passe o phone_number para ele.
 
 ## FLUXO PARA AGENDA/CALENDÁRIO (reunião, compromisso, evento, agenda)
 
