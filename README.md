@@ -224,11 +224,3 @@ python init_db.py
 - **WhatsApp não conecta**: Verifique instância na Evolution API.
 - **MCP Calendar falha**: Reautentique OAuth no Google.
 
-## 📚 Documentação Adicional
-
-- [Integração Google Calendar](docs/google-calendar-integration.md)
-- [Explicação das Instruções](docs/explicacao_instructions_orq.txt)
-
----
-
-**Contribua**: Abra issues ou PRs no repositório. Para dúvidas, consulte a documentação ou os logs.
